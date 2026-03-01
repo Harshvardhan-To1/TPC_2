@@ -83,6 +83,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ─── API 404 FALLBACK ─────────────────────────────────────────
+app.use('/api', (req, res) => {
+  res.status(404).json({ success: false, message: 'API route not found.' });
+});
+
 // ─── FALLBACK — serve frontend index for SPA-style routing ────
 app.get('*', (req, res) => {
   const indexPath = path.join(frontendPath, 'index.html');

@@ -7,6 +7,15 @@ const { getDb } = require('../database/db');
 const path = require('path');
 const fs   = require('fs');
 
+function getOwnedApplication(db, applicationId, companyId) {
+  return db.prepare(`
+    SELECT a.id, a.student_id, a.drive_id, jd.company_id
+    FROM applications a
+    JOIN job_drives jd ON jd.id = a.drive_id
+    WHERE a.id = ? AND jd.company_id = ?
+  `).get(applicationId, companyId);
+}
+
 // ─── PROFILE ──────────────────────────────────────────────────
 
 function getProfile(req, res) {
@@ -170,7 +179,7 @@ function updateDrive(req, res) {
 function closeDrive(req, res) {
   try {
     const db = getDb();
-    db.prepare('UPDATE job_drives SET status="closed", updated_at=? WHERE id=? AND company_id=?')
+    db.prepare("UPDATE job_drives SET status='closed', updated_at=? WHERE id=? AND company_id=?")
       .run(new Date().toISOString(), req.params.id, req.user.id);
     return res.json({ success: true, message: 'Drive closed.' });
   } catch (err) {
@@ -221,12 +230,7 @@ function updateApplicationStatus(req, res) {
     }
 
     const db  = getDb();
-    // Verify company owns the drive
-    const app = db.prepare(`
-      SELECT a.id FROM applications a
-      JOIN job_drives jd ON jd.id = a.drive_id
-      WHERE a.id = ? AND jd.company_id = ?
-    `).get(req.params.id, req.user.id);
+    const app = getOwnedApplication(db, req.params.id, req.user.id);
 
     if (!app) return res.status(404).json({ success: false, message: 'Application not found.' });
 
@@ -242,20 +246,65 @@ function updateApplicationStatus(req, res) {
 function bulkUpdateApplications(req, res) {
   try {
     const { application_ids, status } = req.body;
+    const allowed = ['shortlisted', 'interview', 'selected', 'rejected'];
     if (!Array.isArray(application_ids) || !status) {
       return res.status(400).json({ success: false, message: 'application_ids and status required.' });
     }
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status.' });
+    }
+
+    const uniqueIds = [...new Set(application_ids.map(id => Number.parseInt(id, 10)).filter(Number.isFinite))];
+    if (!uniqueIds.length) {
+      return res.status(400).json({ success: false, message: 'No valid application_ids provided.' });
+    }
+
     const db   = getDb();
+    const placeholders = uniqueIds.map(() => '?').join(',');
+    const owned = db.prepare(`
+      SELECT a.id
+      FROM applications a
+      JOIN job_drives jd ON jd.id = a.drive_id
+      WHERE jd.company_id = ? AND a.id IN (${placeholders})
+    `).all(req.user.id, ...uniqueIds).map(r => r.id);
+
+    if (!owned.length) {
+      return res.status(404).json({ success: false, message: 'No matching applications found for your drives.' });
+    }
+
     const stmt = db.prepare('UPDATE applications SET status=?, updated_at=? WHERE id=?');
-    const now  = new Date().toISOString();
-    db.transaction(() => { application_ids.forEach(id => stmt.run(status, now, id)); })();
-    return res.json({ success: true, message: `${application_ids.length} applications updated.` });
+    const now = new Date().toISOString();
+    db.transaction(() => { owned.forEach(id => stmt.run(status, now, id)); })();
+
+    return res.json({ success: true, message: `${owned.length} applications updated.` });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 }
 
 // ─── INTERVIEWS ───────────────────────────────────────────────
+
+function getMyInterviews(req, res) {
+  try {
+    const db = getDb();
+    const interviews = db.prepare(`
+      SELECT i.id, i.application_id, i.round_number, i.round_name, i.scheduled_at, i.venue, i.mode, i.meeting_link, i.status, i.result, i.feedback,
+             a.status as application_status,
+             s.name as student_name, s.roll_number, s.branch,
+             jd.title as drive_title
+      FROM interviews i
+      JOIN applications a ON a.id = i.application_id
+      JOIN students s ON s.id = a.student_id
+      JOIN job_drives jd ON jd.id = a.drive_id
+      WHERE jd.company_id = ?
+      ORDER BY i.scheduled_at DESC, i.created_at DESC
+    `).all(req.user.id);
+
+    return res.json({ success: true, data: { interviews } });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+}
 
 function scheduleInterview(req, res) {
   try {
@@ -264,6 +313,11 @@ function scheduleInterview(req, res) {
       return res.status(400).json({ success: false, message: 'application_id and round_number required.' });
     }
     const db = getDb();
+    const app = getOwnedApplication(db, application_id, req.user.id);
+    if (!app) {
+      return res.status(404).json({ success: false, message: 'Application not found.' });
+    }
+
     const result = db.prepare(`
       INSERT INTO interviews (application_id, round_number, round_name, scheduled_at, venue, mode, meeting_link)
       VALUES (?,?,?,?,?,?,?)
@@ -271,7 +325,7 @@ function scheduleInterview(req, res) {
            scheduled_at||null, venue||null, mode||'offline', meeting_link||null);
 
     // Update application status to 'interview'
-    db.prepare('UPDATE applications SET status="interview", updated_at=? WHERE id=?')
+    db.prepare("UPDATE applications SET status='interview', updated_at=? WHERE id=?")
       .run(new Date().toISOString(), application_id);
 
     return res.status(201).json({ success: true, message: 'Interview scheduled.', interviewId: result.lastInsertRowid });
@@ -284,7 +338,19 @@ function updateInterviewResult(req, res) {
   try {
     const { result, feedback } = req.body;
     const db = getDb();
-    db.prepare('UPDATE interviews SET result=?, feedback=?, status="completed", updated_at=? WHERE id=?')
+
+    const interview = db.prepare(`
+      SELECT i.id
+      FROM interviews i
+      JOIN applications a ON a.id = i.application_id
+      JOIN job_drives jd ON jd.id = a.drive_id
+      WHERE i.id = ? AND jd.company_id = ?
+    `).get(req.params.id, req.user.id);
+    if (!interview) {
+      return res.status(404).json({ success: false, message: 'Interview not found.' });
+    }
+
+    db.prepare("UPDATE interviews SET result=?, feedback=?, status='completed', updated_at=? WHERE id=?")
       .run(result||null, feedback||null, new Date().toISOString(), req.params.id);
     return res.json({ success: true, message: 'Interview result updated.' });
   } catch (err) {
@@ -318,7 +384,7 @@ function issueOffer(req, res) {
       VALUES (?,?,?,?,?,?)
     `).run(application_id, app.student_id, app.company_id, app.drive_id, parseFloat(pkg), offerPath);
 
-    db.prepare('UPDATE applications SET status="selected", updated_at=? WHERE id=?')
+    db.prepare("UPDATE applications SET status='selected', updated_at=? WHERE id=?")
       .run(new Date().toISOString(), application_id);
 
     return res.status(201).json({ success: true, message: 'Offer issued successfully.' });
@@ -345,8 +411,8 @@ function getReports(req, res) {
     `).all(req.user.id);
 
     const totalOffers  = db.prepare('SELECT COUNT(*) as c FROM offers WHERE company_id=?').get(req.user.id).c;
-    const acceptedOffers = db.prepare('SELECT COUNT(*) as c FROM offers WHERE company_id=? AND status="accepted"').get(req.user.id).c;
-    const avgPackage   = db.prepare('SELECT AVG(package) as avg FROM offers WHERE company_id=? AND status="accepted"').get(req.user.id).avg;
+    const acceptedOffers = db.prepare("SELECT COUNT(*) as c FROM offers WHERE company_id=? AND status='accepted'").get(req.user.id).c;
+    const avgPackage   = db.prepare("SELECT AVG(package) as avg FROM offers WHERE company_id=? AND status='accepted'").get(req.user.id).avg;
 
     return res.json({
       success: true,
@@ -377,7 +443,7 @@ function submitQuery(req, res) {
 function getMyQueries(req, res) {
   try {
     const db      = getDb();
-    const queries = db.prepare('SELECT * FROM queries WHERE sender_id=? AND sender_role="company" ORDER BY created_at DESC').all(req.user.id);
+    const queries = db.prepare("SELECT * FROM queries WHERE sender_id=? AND sender_role='company' ORDER BY created_at DESC").all(req.user.id);
     return res.json({ success: true, data: { queries } });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -406,7 +472,7 @@ module.exports = {
   getProfile, updateProfile, uploadLogo,
   getMyDrives, getDriveById, createDrive, updateDrive, closeDrive,
   getDriveApplicants, updateApplicationStatus, bulkUpdateApplications,
-  scheduleInterview, updateInterviewResult,
+  getMyInterviews, scheduleInterview, updateInterviewResult,
   issueOffer,
   getReports,
   submitQuery, getMyQueries,

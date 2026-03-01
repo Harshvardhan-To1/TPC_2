@@ -134,7 +134,7 @@ Open `.env` in any text editor (Notepad, VS Code) and set:
 PORT=5000
 NODE_ENV=development
 JWT_SECRET=your_very_long_random_secret_string_here
-FRONTEND_DIR=../placemat-frontend/placemat-frontend
+FRONTEND_DIR=../../frontend/placemat-frontend
 ```
 
 > ⚠️ **IMPORTANT**: Change `JWT_SECRET` to a long random string. Never share it.

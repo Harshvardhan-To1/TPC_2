@@ -12,6 +12,7 @@ const authCtrl    = require('../controllers/studentAuthController');
 const studentCtrl = require('../controllers/studentController');
 
 // ─── AUTH (public) ────────────────────────────────────────────
+router.get('/placed-students', studentCtrl.getPlacedStudentsPublic);
 router.post('/auth/login',    sanitizeInputs, authCtrl.login);
 router.post('/auth/register', sanitizeInputs, authCtrl.register);
 
@@ -39,5 +40,6 @@ router.post('/offer/respond',   sanitizeInputs, studentCtrl.respondToOffer);
 // Notifications & Queries
 router.get('/notifications',    studentCtrl.getMyNotifications);
 router.post('/queries',         sanitizeInputs, studentCtrl.submitQuery);
+router.get('/queries',          studentCtrl.getMyQueries);
 
 module.exports = router;
