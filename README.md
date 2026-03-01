@@ -16,7 +16,21 @@ This repository is organized into two primary apps:
 
 ## Run locally
 
-### 1) Backend
+### Recommended (single command from repo root)
+
+```bash
+cd backend/placemat-backend
+npm install
+cp .env.example .env
+cd ../..
+node server.js
+```
+
+This starts the backend API and serves the frontend together on `http://localhost:5000`.
+
+### Alternative: backend/frontend separately
+
+Backend:
 
 ```bash
 cd backend/placemat-backend
@@ -25,14 +39,7 @@ cp .env.example .env
 npm start
 ```
 
-Server runs on `http://localhost:5000`.
-
-### 2) Frontend
-
-The backend serves frontend files automatically when `FRONTEND_DIR` is correctly set
-(default now points to `../../frontend/placemat-frontend`).
-
-You can also run frontend alone with any static server:
+Frontend can still be run alone with a static server if needed:
 
 ```bash
 cd frontend/placemat-frontend
