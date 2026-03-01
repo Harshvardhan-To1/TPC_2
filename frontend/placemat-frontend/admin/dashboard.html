@@ -1026,6 +1026,7 @@ function showSection(name) {
   if (name === 'applications')  loadApplications();
   if (name === 'notifications') loadNotifHistory();
   if (name === 'queries')       loadQueries();
+  if (name === 'interviews')    loadInterviews();
   if (name === 'analytics')     loadAnalytics();
 }
 
@@ -1045,9 +1046,14 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 // ── DASHBOARD ────────────────────────────────────────────────
 async function loadDashboard() {
   try {
-    const r = await fetch(`${API}/admin/dashboard`, { headers: authHeaders() });
-    const d = await r.json();
-    if (!d.success) { if(r.status===401) logout(); return; }
+    const [dashboardRes, analyticsRes] = await Promise.all([
+      fetch(`${API}/admin/dashboard`, { headers: authHeaders() }),
+      fetch(`${API}/admin/analytics`, { headers: authHeaders() })
+    ]);
+
+    const d = await dashboardRes.json();
+    const analytics = await analyticsRes.json();
+    if (!d.success) { if(dashboardRes.status===401) logout(); return; }
     const o = d.data.overview;
 
     document.getElementById('stat-students').textContent      = o.totalStudents;
@@ -1059,12 +1065,12 @@ async function loadDashboard() {
     document.getElementById('stat-placement-rate').textContent= `${o.placementRate}%`;
     document.getElementById('stat-avg-pkg').textContent       = `Avg pkg: ${o.avgPackage} LPA`;
 
-    if (o.pendingCompanies > 0) document.getElementById('pendingBadge').textContent = o.pendingCompanies;
+    document.getElementById('pendingBadge').textContent = o.pendingCompanies || 0;
 
     renderRecentCompanies(d.data.recentCompanies);
     renderRecentDrives(d.data.recentDrives);
     renderBranchChart(d.data.branchStats);
-    renderMonthlyChart([]);
+    renderMonthlyChart(analytics.success ? analytics.data.monthlyPlacements : []);
   } catch(e) { console.error(e); }
 }
 
@@ -1110,12 +1116,23 @@ function renderBranchChart(data) {
 function renderMonthlyChart(data) {
   const ctx = document.getElementById('monthlyChart')?.getContext('2d');
   if (!ctx) return;
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  let labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let values = [0,0,0,2,5,8,12,15,10,18,22,20];
+
+  if (Array.isArray(data) && data.length) {
+    labels = data.map(row => {
+      const date = new Date(`${row.month}-01T00:00:00`);
+      return date.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+    });
+    values = data.map(row => Number.parseInt(row.count, 10) || 0);
+  }
+
   new Chart(ctx, {
     type: 'line',
     data: {
-      labels: months,
-      datasets: [{ label: 'Placements', data: [0,0,0,2,5,8,12,15,10,18,22,20], backgroundColor: 'rgba(59,130,246,0.08)', borderColor: '#3B82F6', borderWidth: 2.5, fill: true, tension: 0.4, pointBackgroundColor: '#3B82F6', pointRadius: 4 }]
+      labels,
+      datasets: [{ label: 'Placements', data: values, backgroundColor: 'rgba(59,130,246,0.08)', borderColor: '#3B82F6', borderWidth: 2.5, fill: true, tension: 0.4, pointBackgroundColor: '#3B82F6', pointRadius: 4 }]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, grid: { color: '#F1F5F9' } }, x: { grid: { display: false } } } }
   });
@@ -1332,12 +1349,83 @@ async function openDriveModal() {
   document.getElementById('driveModalTitle').textContent = 'Create Job Drive';
   document.getElementById('driveTitle').value = '';
   document.getElementById('driveDesc').value  = '';
+  document.getElementById('driveLocation').value = '';
+  document.getElementById('drivePkgMin').value = '';
+  document.getElementById('drivePkgMax').value = '';
+  document.getElementById('driveMinCgpa').value = '';
+  document.getElementById('driveDeadline').value = '';
+  document.getElementById('driveDriveDate').value = '';
+  document.getElementById('driveEligBranches').value = '';
+  document.getElementById('driveJobType').value = 'full_time';
+  document.getElementById('driveStatus').value = 'upcoming';
+
   // Load companies for dropdown
   const r = await fetch(`${API}/admin/companies?status=approved`, { headers: authHeaders() });
   const d = await r.json();
   const sel = document.getElementById('driveCompanyId');
   sel.innerHTML = d.data?.companies?.map(c => `<option value="${c.id}">${c.name}</option>`).join('') || '<option>No approved companies</option>';
   openModal('driveModal');
+}
+
+async function editDrive(id) {
+  try {
+    const r = await fetch(`${API}/admin/drives?limit=200`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.success) {
+      toast('Failed to fetch drive details.','error');
+      return;
+    }
+
+    const drive = (d.data.drives || []).find(dr => dr.id === id);
+    if (!drive) {
+      toast('Drive not found.','error');
+      return;
+    }
+
+    await openDriveModal();
+    editingDriveId = id;
+    document.getElementById('driveModalTitle').textContent = 'Edit Job Drive';
+    document.getElementById('driveCompanyId').value = String(drive.company_id);
+    document.getElementById('driveTitle').value = drive.title || '';
+    document.getElementById('driveDesc').value = drive.description || '';
+    document.getElementById('driveJobType').value = drive.job_type || 'full_time';
+    document.getElementById('driveLocation').value = drive.location || '';
+    document.getElementById('drivePkgMin').value = drive.package_min || '';
+    document.getElementById('drivePkgMax').value = drive.package_max || '';
+    document.getElementById('driveMinCgpa').value = drive.min_cgpa || '';
+    document.getElementById('driveDeadline').value = drive.application_deadline ? drive.application_deadline.split('T')[0] : '';
+    document.getElementById('driveDriveDate').value = drive.drive_date ? drive.drive_date.split('T')[0] : '';
+    document.getElementById('driveStatus').value = drive.status || 'upcoming';
+    document.getElementById('driveEligBranches').value = safeArray(drive.eligible_branches).join(', ');
+  } catch (e) {
+    toast('Failed to load drive.','error');
+  }
+}
+
+async function viewApplicants(driveId, driveTitle) {
+  showSection('applications');
+
+  try {
+    const drivesRes = await fetch(`${API}/admin/drives?limit=200`, { headers: authHeaders() });
+    const drivesData = await drivesRes.json();
+    if (drivesData.success) {
+      const sel = document.getElementById('appDriveFilter');
+      if (sel) {
+        sel.innerHTML = '<option value="">All Drives</option>' +
+          (drivesData.data?.drives || []).map(dr => `<option value="${dr.id}">${dr.title}</option>`).join('');
+        sel.dataset.loaded = '1';
+        sel.value = String(driveId);
+      }
+    }
+  } catch {}
+
+  const driveFilter = document.getElementById('appDriveFilter');
+  if (driveFilter?.value !== String(driveId)) {
+    driveFilter.value = String(driveId);
+  }
+
+  loadApplications();
+  toast(`Showing applicants for "${driveTitle}".`);
 }
 
 async function saveDrive() {
@@ -1361,7 +1449,13 @@ async function saveDrive() {
     const method = editingDriveId ? 'PUT' : 'POST';
     const r = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(payload) });
     const d = await r.json();
-    if (d.success) { toast(editingDriveId?'Drive updated!':'Drive created! 🎉'); closeModal('driveModal'); loadDrives(); }
+    if (d.success) {
+      const appDriveFilter = document.getElementById('appDriveFilter');
+      if (appDriveFilter) appDriveFilter.dataset.loaded = '';
+      toast(editingDriveId?'Drive updated!':'Drive created! 🎉');
+      closeModal('driveModal');
+      loadDrives();
+    }
     else toast(d.message,'error');
   } catch(e) { toast('Server error','error'); }
 }
@@ -1390,13 +1484,14 @@ async function changeDriveStatus(id, current) {
 async function loadApplications() {
   const drive  = document.getElementById('appDriveFilter')?.value || '';
   const status = document.getElementById('appStatusFilter')?.value || '';
+  const driveSelect = document.getElementById('appDriveFilter');
 
-  // Populate drive filter if empty
-  if (!document.getElementById('appDriveFilter').options.length || document.getElementById('appDriveFilter').options[0].value === '') {
+  // Populate drive filter once, then reuse.
+  if (driveSelect && !driveSelect.dataset.loaded) {
     const r = await fetch(`${API}/admin/drives`, { headers: authHeaders() });
     const d = await r.json();
-    const sel = document.getElementById('appDriveFilter');
-    sel.innerHTML = '<option value="">All Drives</option>' + (d.data?.drives||[]).map(dr=>`<option value="${dr.id}">${dr.title}</option>`).join('');
+    driveSelect.innerHTML = '<option value="">All Drives</option>' + (d.data?.drives||[]).map(dr=>`<option value="${dr.id}">${dr.title}</option>`).join('');
+    driveSelect.dataset.loaded = '1';
   }
 
   if (!drive) { document.getElementById('applicationsTable').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--light);">Select a drive to view applicants</td></tr>'; return; }
@@ -1416,8 +1511,8 @@ async function loadApplications() {
           <div style="font-weight:600;">${a.name}</div>
           <div style="font-size:11px;color:var(--light);">${a.roll_number} • ${a.branch}</div>
         </td>
-        <td>—</td>
-        <td>—</td>
+        <td>${a.drive_title || '—'}</td>
+        <td>${a.company_name || '—'}</td>
         <td><strong>${a.cgpa}</strong></td>
         <td>${fmtDate(a.applied_at)}</td>
         <td>${appStatusBadge(a.status)}</td>
@@ -1493,6 +1588,42 @@ async function loadNotifHistory() {
         <div style="margin-top:6px;"><span class="badge badge-info">${n.target_role}</span>${n.target_branch?`<span class="badge badge-purple" style="margin-left:4px;">${n.target_branch}</span>`:''}</div>
       </div>`).join('');
   } catch(e) { console.error(e); }
+}
+
+// ── INTERVIEWS ────────────────────────────────────────────────
+async function loadInterviews() {
+  const tb = document.getElementById('interviewsTable');
+  if (!tb) return;
+  tb.innerHTML = '<tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div></div></td></tr>';
+
+  try {
+    const r = await fetch(`${API}/admin/interviews`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.success) {
+      tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--light);">Unable to load interviews.</td></tr>';
+      return;
+    }
+
+    const interviews = d.data.interviews || [];
+    if (!interviews.length) {
+      tb.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📅</div><p>No interviews scheduled yet.</p></div></td></tr>`;
+      return;
+    }
+
+    tb.innerHTML = interviews.map(interview => `
+      <tr>
+        <td>${interview.student_name}</td>
+        <td>${interview.company_name}</td>
+        <td>${interview.drive_title}</td>
+        <td>${interview.round_name || `Round ${interview.round_number}`}</td>
+        <td>${interview.scheduled_at ? fmtDate(interview.scheduled_at) : 'TBD'}</td>
+        <td>${interview.mode || 'offline'}</td>
+        <td>${statusBadge(interview.status || 'scheduled')}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--light);">Unable to load interviews.</td></tr>';
+  }
 }
 
 // ── QUERIES ──────────────────────────────────────────────────
@@ -1614,8 +1745,6 @@ function renderTopPackages(data) {
 
 // ── EXPORTS ──────────────────────────────────────────────────
 function exportCSV(type) {
-  window.open(`${API}/admin/export/${type}?token=${token}`, '_blank');
-  // Attach token via fetch for proper auth
   fetch(`${API}/admin/export/${type}`, { headers: authHeaders() })
     .then(r => r.blob())
     .then(blob => {
@@ -1623,17 +1752,39 @@ function exportCSV(type) {
       const a   = document.createElement('a');
       a.href = url; a.download = `${type}.csv`; a.click();
       URL.revokeObjectURL(url);
-    });
+    })
+    .catch(() => toast('Failed to export CSV.','error'));
 }
 
 // ── HELPERS ──────────────────────────────────────────────────
+function safeArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function fmtDate(d) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
 }
 
 function statusBadge(status) {
-  const map = { approved:'badge-success', pending:'badge-warning', rejected:'badge-danger', active:'badge-success', upcoming:'badge-info', closed:'badge-gray', cancelled:'badge-danger' };
+  const map = {
+    approved:'badge-success',
+    pending:'badge-warning',
+    rejected:'badge-danger',
+    active:'badge-success',
+    upcoming:'badge-info',
+    closed:'badge-gray',
+    cancelled:'badge-danger',
+    scheduled:'badge-info',
+    completed:'badge-success'
+  };
   return `<span class="badge ${map[status]||'badge-gray'}">${status}</span>`;
 }
 
@@ -1642,7 +1793,49 @@ function appStatusBadge(status) {
   return `<span class="badge ${map[status]||'badge-gray'}">${status}</span>`;
 }
 
-function openInterviewModal() { toast('Interview scheduling coming soon!','error'); }
+async function openInterviewModal() {
+  const applicationId = window.prompt('Enter Application ID:');
+  if (!applicationId) return;
+
+  const roundNumber = window.prompt('Round Number (default 1):', '1') || '1';
+  const roundName = window.prompt('Round Name (optional):', `Round ${roundNumber}`) || `Round ${roundNumber}`;
+  const scheduledAt = window.prompt('Scheduled datetime (YYYY-MM-DDTHH:mm, optional):', '');
+  const mode = (window.prompt('Mode: online/offline', 'offline') || 'offline').toLowerCase() === 'online' ? 'online' : 'offline';
+  const venueOrLink = window.prompt(mode === 'online' ? 'Meeting link (optional):' : 'Venue (optional):', '') || '';
+
+  const payload = {
+    application_id: Number.parseInt(applicationId, 10),
+    round_number: Number.parseInt(roundNumber, 10) || 1,
+    round_name: roundName,
+    scheduled_at: scheduledAt || null,
+    mode,
+    venue: mode === 'offline' ? (venueOrLink || null) : null,
+    meeting_link: mode === 'online' ? (venueOrLink || null) : null
+  };
+
+  if (!Number.isFinite(payload.application_id) || payload.application_id <= 0) {
+    toast('Invalid Application ID.','error');
+    return;
+  }
+
+  try {
+    const r = await fetch(`${API}/admin/interviews`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (!d.success) {
+      toast(d.message || 'Failed to schedule interview.','error');
+      return;
+    }
+
+    toast('Interview scheduled successfully.');
+    showSection('interviews');
+  } catch (e) {
+    toast('Server error while scheduling interview.','error');
+  }
+}
 </script>
 </body>
 </html>

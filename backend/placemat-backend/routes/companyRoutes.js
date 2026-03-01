@@ -38,6 +38,7 @@ router.patch('/applications/bulk',                    sanitizeInputs, companyCtr
 // Interviews
 router.post('/interviews',          sanitizeInputs, companyCtrl.scheduleInterview);
 router.patch('/interviews/:id',     sanitizeInputs, companyCtrl.updateInterviewResult);
+router.get('/interviews',           companyCtrl.getMyInterviews);
 
 // Offers
 router.post('/offers', offerUpload.single('offer_letter'), companyCtrl.issueOffer);

@@ -112,6 +112,7 @@ function redirectIfLoggedIn() {
   const dashboards = {
     student: '../student/dashboard.html',
     admin:   '../admin/dashboard.html',
+    superadmin: '../admin/dashboard.html',
     company: '../company/dashboard.html'
   };
 
@@ -128,5 +129,14 @@ async function apiPost(endpoint, data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  return response.json();
+
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      success: false,
+      message: response.ok ? 'Unexpected server response.' : `Request failed with status ${response.status}.`
+    };
+  }
 }

@@ -442,19 +442,25 @@
   async function openStatsModal() {
     document.getElementById('statsOverlay').style.display = 'flex';
     try {
-      const r = await fetch('/api/admin/dashboard', { headers: { 'Content-Type': 'application/json' } });
-      // Use public stats endpoint or fallback to sample data
+      const r = await fetch('/api/student/placed-students', { headers: { 'Content-Type': 'application/json' } });
       if (r.ok) {
         const d = await r.json();
-        if (d.success) {
-          const o = d.data.overview;
-          document.getElementById('sPlaced').textContent    = o.placedStudents || 0;
-          document.getElementById('sAvgPkg').textContent    = o.avgPackage || '—';
-          document.getElementById('sHighPkg').textContent   = o.highestPackage || '—';
-          document.getElementById('sCompanies').textContent = o.totalCompanies || 0;
-          document.getElementById('sDrives').textContent    = o.totalDrives || 0;
-          document.getElementById('sRate').textContent      = (o.placementRate || 0) + '%';
-          renderBranchStats(d.data.branchStats);
+        if (d.success && d.data?.summary) {
+          const s = d.data.summary;
+          const students = d.data.students || [];
+          const placed = s.placedStudents || 0;
+          const totalPopulation = (d.data.branchStats || []).reduce((sum, b) => sum + (b.total || 0), 0);
+          const placementRate = totalPopulation > 0
+            ? Math.round((placed / totalPopulation) * 100)
+            : 0;
+
+          document.getElementById('sPlaced').textContent    = placed;
+          document.getElementById('sAvgPkg').textContent    = s.avgPackage || '—';
+          document.getElementById('sHighPkg').textContent   = s.highestPackage || '—';
+          document.getElementById('sCompanies').textContent = s.totalCompanies || 0;
+          document.getElementById('sDrives').textContent    = s.totalDrives || 0;
+          document.getElementById('sRate').textContent      = placementRate + '%';
+          renderBranchStats(d.data.branchStats || []);
           return;
         }
       }

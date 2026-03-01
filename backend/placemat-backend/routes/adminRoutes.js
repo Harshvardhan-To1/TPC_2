@@ -46,6 +46,10 @@ router.get('/drives/:drive_id/applicants', adminCtrl.getDriveApplicants);
 router.patch('/applications/:id/status', sanitizeInputs, adminCtrl.updateApplicationStatus);
 router.patch('/applications/bulk',       sanitizeInputs, adminCtrl.bulkUpdateApplications);
 
+// ─── INTERVIEWS ───────────────────────────────────────────────
+router.get('/interviews', adminCtrl.getAllInterviews);
+router.post('/interviews', sanitizeInputs, adminCtrl.scheduleInterview);
+
 // ─── NOTIFICATIONS ────────────────────────────────────────────
 router.get('/notifications',       adminCtrl.getNotifications);
 router.post('/notifications',      sanitizeInputs, adminCtrl.sendNotification);

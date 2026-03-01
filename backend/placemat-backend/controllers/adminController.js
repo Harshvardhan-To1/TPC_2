@@ -17,13 +17,13 @@ function getDashboardStats(req, res) {
 
     const totalStudents   = db.prepare('SELECT COUNT(*) as c FROM students WHERE is_active=1').get().c;
     const placedStudents  = db.prepare('SELECT COUNT(*) as c FROM students WHERE is_placed=1').get().c;
-    const totalCompanies  = db.prepare('SELECT COUNT(*) as c FROM companies WHERE approval_status="approved"').get().c;
-    const pendingCompanies= db.prepare('SELECT COUNT(*) as c FROM companies WHERE approval_status="pending"').get().c;
-    const activeDrives    = db.prepare('SELECT COUNT(*) as c FROM job_drives WHERE status="active"').get().c;
+    const totalCompanies  = db.prepare("SELECT COUNT(*) as c FROM companies WHERE approval_status='approved'").get().c;
+    const pendingCompanies= db.prepare("SELECT COUNT(*) as c FROM companies WHERE approval_status='pending'").get().c;
+    const activeDrives    = db.prepare("SELECT COUNT(*) as c FROM job_drives WHERE status='active'").get().c;
     const totalDrives     = db.prepare('SELECT COUNT(*) as c FROM job_drives').get().c;
     const totalApplications = db.prepare('SELECT COUNT(*) as c FROM applications').get().c;
-    const avgPackage      = db.prepare('SELECT AVG(package) as avg FROM offers WHERE status="accepted"').get().avg;
-    const highestPackage  = db.prepare('SELECT MAX(package) as max FROM offers WHERE status="accepted"').get().max;
+    const avgPackage      = db.prepare("SELECT AVG(package) as avg FROM offers WHERE status='accepted'").get().avg;
+    const highestPackage  = db.prepare("SELECT MAX(package) as max FROM offers WHERE status='accepted'").get().max;
 
     const placementRate   = totalStudents > 0 ? ((placedStudents / totalStudents) * 100).toFixed(1) : 0;
 
@@ -249,13 +249,27 @@ function verifyStudentProfile(req, res) {
   try {
     const { profile_verified, resume_verified } = req.body;
     const db = getDb();
+    const student = db.prepare('SELECT id, profile_verified, resume_verified FROM students WHERE id = ?').get(req.params.id);
+    if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
+
+    const nextProfileVerified = profile_verified !== undefined
+      ? Number.parseInt(profile_verified, 10)
+      : student.profile_verified;
+    const nextResumeVerified = resume_verified !== undefined
+      ? Number.parseInt(resume_verified, 10)
+      : student.resume_verified;
+
+    if (![0, 1].includes(nextProfileVerified) || ![0, 1].includes(nextResumeVerified)) {
+      return res.status(400).json({ success: false, message: 'Verification values must be 0 or 1.' });
+    }
+
     db.prepare(`
       UPDATE students
       SET profile_verified = ?, resume_verified = ?, updated_at = ?
       WHERE id = ?
     `).run(
-      profile_verified !== undefined ? parseInt(profile_verified) : undefined,
-      resume_verified  !== undefined ? parseInt(resume_verified)  : undefined,
+      nextProfileVerified,
+      nextResumeVerified,
       new Date().toISOString(),
       req.params.id
     );
@@ -272,6 +286,12 @@ function markStudentPlaced(req, res) {
       return res.status(400).json({ success: false, message: 'company_id and package are required.' });
     }
     const db = getDb();
+
+    const student = db.prepare('SELECT id FROM students WHERE id = ?').get(req.params.id);
+    if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
+    const company = db.prepare('SELECT id FROM companies WHERE id = ?').get(company_id);
+    if (!company) return res.status(404).json({ success: false, message: 'Company not found.' });
+
     db.prepare(`
       UPDATE students
       SET is_placed = 1, placed_company_id = ?, placement_package = ?, updated_at = ?
@@ -439,9 +459,12 @@ function getDriveApplicants(req, res) {
     const applicants = db.prepare(`
       SELECT a.id as application_id, a.status, a.applied_at, a.notes,
              s.id as student_id, s.name, s.email, s.roll_number, s.branch,
-             s.year, s.cgpa, s.resume_path, s.phone
+             s.year, s.cgpa, s.resume_path, s.phone,
+             jd.title as drive_title, c.name as company_name
       FROM applications a
       JOIN students s ON s.id = a.student_id
+      JOIN job_drives jd ON jd.id = a.drive_id
+      JOIN companies c ON c.id = jd.company_id
       WHERE ${where}
       ORDER BY a.applied_at ASC
     `).all(...params);
@@ -485,6 +508,75 @@ function bulkUpdateApplications(req, res) {
     });
     update();
     return res.json({ success: true, message: `${application_ids.length} applications updated to ${status}.` });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+}
+
+function getAllInterviews(req, res) {
+  try {
+    const db = getDb();
+    const { status } = req.query;
+    let where = '1=1';
+    const params = [];
+    if (status) {
+      where += ' AND i.status = ?';
+      params.push(status);
+    }
+
+    const interviews = db.prepare(`
+      SELECT i.id, i.round_number, i.round_name, i.scheduled_at, i.mode, i.venue, i.meeting_link, i.status, i.result,
+             s.name as student_name, c.name as company_name, jd.title as drive_title
+      FROM interviews i
+      JOIN applications a ON a.id = i.application_id
+      JOIN students s ON s.id = a.student_id
+      JOIN job_drives jd ON jd.id = a.drive_id
+      JOIN companies c ON c.id = jd.company_id
+      WHERE ${where}
+      ORDER BY i.scheduled_at DESC, i.created_at DESC
+      LIMIT 250
+    `).all(...params);
+
+    return res.json({ success: true, data: { interviews } });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+}
+
+function scheduleInterview(req, res) {
+  try {
+    const { application_id, round_number, round_name, scheduled_at, venue, mode, meeting_link } = req.body;
+    if (!application_id || !round_number) {
+      return res.status(400).json({ success: false, message: 'application_id and round_number are required.' });
+    }
+
+    const db = getDb();
+    const application = db.prepare('SELECT id FROM applications WHERE id = ?').get(application_id);
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found.' });
+    }
+
+    const result = db.prepare(`
+      INSERT INTO interviews (application_id, round_number, round_name, scheduled_at, venue, mode, meeting_link)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      Number.parseInt(application_id, 10),
+      Number.parseInt(round_number, 10),
+      round_name || `Round ${round_number}`,
+      scheduled_at || null,
+      venue || null,
+      mode || 'offline',
+      meeting_link || null
+    );
+
+    db.prepare("UPDATE applications SET status = 'interview', updated_at = ? WHERE id = ?")
+      .run(new Date().toISOString(), application_id);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Interview scheduled.',
+      interviewId: result.lastInsertRowid
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
@@ -638,6 +730,7 @@ module.exports = {
   getAllStudents, getStudentById, toggleStudentBlock, verifyStudentProfile, markStudentPlaced,
   getAllDrives, createDrive, updateDrive, deleteDrive, changeDriveStatus,
   getDriveApplicants, updateApplicationStatus, bulkUpdateApplications,
+  getAllInterviews, scheduleInterview,
   sendNotification, getNotifications,
   getAllQueries, replyQuery,
   getAnalytics, getAuditLogs

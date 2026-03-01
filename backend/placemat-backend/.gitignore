@@ -1,6 +1,8 @@
 node_modules/
 .env
 database/placemat.db
+database/placemat.db-shm
+database/placemat.db-wal
 uploads/resumes/
 uploads/logos/
 uploads/offers/

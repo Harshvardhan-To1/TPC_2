@@ -173,7 +173,7 @@ function goToRole(role) {
     signup: {
       student: 'student/register.html',
       admin:   'admin/login.html',      // admins don't self-register
-      company: 'company/register.html'
+      company: 'company/login.html?action=register'
     }
   };
 

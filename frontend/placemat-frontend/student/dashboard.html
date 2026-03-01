@@ -608,6 +608,7 @@ let skills  = [];
 let projects= JSON.parse(localStorage.getItem('placemat_projects') || '[]');
 let certs   = JSON.parse(localStorage.getItem('placemat_certs') || '[]');
 let pendingApplyDriveId = null;
+let currentOffer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!token || !user || user.role !== 'student') { window.location.href = 'login.html'; return; }
@@ -662,11 +663,14 @@ async function loadDashboard() {
     const apps  = await appR.json();
 
     if (dash.success) {
-      const s = dash.data;
-      document.getElementById('ds-drives').textContent    = s.activeDrivers || s.totalDrives || 0;
-      document.getElementById('ds-apps').textContent      = s.totalApplications || 0;
-      document.getElementById('ds-interviews').textContent= s.upcomingInterviews || 0;
-      if (user.is_placed) {
+      const stats = dash.data?.stats || {};
+      const profileData = dash.data?.profile || dash.data?.student || {};
+
+      document.getElementById('ds-drives').textContent = stats.activeDrives || 0;
+      document.getElementById('ds-apps').textContent = stats.applications || 0;
+      document.getElementById('ds-interviews').textContent = stats.interviews || 0;
+
+      if (profileData.is_placed) {
         document.getElementById('ds-status').textContent  = 'Placed 🎉';
         document.getElementById('ds-status-icon').textContent = '🏆';
       } else {
@@ -674,8 +678,8 @@ async function loadDashboard() {
         document.getElementById('ds-status-icon').textContent = '🎯';
         document.getElementById('ds-status').style.color  = 'var(--primary)';
       }
-      checkProfileCompletion(s.profile);
-      document.getElementById('sidebarBranch').textContent = s.profile?.branch || user.branch || '';
+      checkProfileCompletion(profileData);
+      document.getElementById('sidebarBranch').textContent = profileData.branch || user.branch || '';
     }
 
     if (notif.success) renderDashNotifs(notif.data.notifications);
@@ -686,11 +690,12 @@ async function loadDashboard() {
 function checkProfileCompletion(p) {
   if (!p) return;
   let score = 0; const total = 5;
+  const parsedSkills = safeParseArray(p.skills);
   if (p.name)        score++;
   if (p.phone)       score++;
   if (p.cgpa)        score++;
   if (p.resume_path) score++;
-  if (p.skills && JSON.parse(p.skills||'[]').length > 0) score++;
+  if (parsedSkills.length > 0) score++;
   const pct = Math.round((score/total)*100);
   if (pct < 100) {
     document.getElementById('profileCompleteCard').style.display = 'flex';
@@ -699,7 +704,7 @@ function checkProfileCompletion(p) {
     const missing = [];
     if (!p.phone)       missing.push('phone number');
     if (!p.resume_path) missing.push('resume');
-    if (!p.skills || !JSON.parse(p.skills||'[]').length) missing.push('skills');
+    if (!parsedSkills.length) missing.push('skills');
     document.getElementById('pcMissingText').textContent = missing.length ? `Missing: ${missing.join(', ')}` : 'Almost done!';
   }
 }
@@ -724,7 +729,7 @@ function renderRecentApps(apps) {
   c.innerHTML = `<table><thead><tr><th>Company</th><th>Drive</th><th>Status</th></tr></thead><tbody>
     ${apps.slice(0,5).map(a => `<tr>
       <td><strong>${a.company_name}</strong></td>
-      <td>${a.drive_title}</td>
+      <td>${a.drive_title || a.title || '-'}</td>
       <td>${appBadge(a.status)}</td>
     </tr>`).join('')}
   </tbody></table>`;
@@ -762,7 +767,7 @@ async function loadJobs() {
           <span class="job-tag">CGPA ${dr.min_cgpa}+</span>
         </div>
         <div style="font-size:12px;color:var(--light);margin-top:6px;">
-          ${dr.eligible_branches ? `🎓 ${JSON.parse(dr.eligible_branches||'[]').join(', ')||'All Branches'}` : '🎓 All Branches'}
+          ${`🎓 ${safeParseArray(dr.eligible_branches).join(', ') || 'All Branches'}`}
         </div>
         <div class="job-footer">
           <div class="job-package">${dr.package_min?`${dr.package_min}–${dr.package_max||'?'} LPA`:'Package TBD'}</div>
@@ -781,8 +786,8 @@ async function viewJob(id) {
     const drive = d.data?.drives?.find(dr => dr.id === id);
     if (!drive) { closeModal('jobModal'); return; }
     document.getElementById('jobModalTitle').textContent = drive.title;
-    const branches = JSON.parse(drive.eligible_branches||'[]');
-    const skills   = JSON.parse(drive.skills_required||'[]');
+    const branches = safeParseArray(drive.eligible_branches);
+    const skills   = safeParseArray(drive.skills_required);
     document.getElementById('jobModalBody').innerHTML = `
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border);">
         <div class="job-logo" style="width:52px;height:52px;font-size:20px;">${drive.company_name[0]}</div>
@@ -901,8 +906,14 @@ async function loadOffers() {
   try {
     const r = await fetch(`${API}/student/offer`, { headers: authH() });
     const d = await r.json();
-    if (!d.success || !d.data.offer) { c.innerHTML = '<div class="empty-state"><div class="ei">📜</div><p>No offer letter yet. Keep going!</p></div>'; return; }
+    if (!d.success || !d.data.offer) {
+      currentOffer = null;
+      c.innerHTML = '<div class="empty-state"><div class="ei">📜</div><p>No offer letter yet. Keep going!</p></div>';
+      return;
+    }
+
     const offer = d.data.offer;
+    currentOffer = offer;
     c.innerHTML = `
       <div style="padding:24px;">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));border-radius:14px;padding:24px;color:white;margin-bottom:16px;">
@@ -915,13 +926,13 @@ async function loadOffers() {
           <div>🏢 <strong>Company:</strong> ${offer.company_name}</div>
           <div>📅 <strong>Date:</strong> ${fmtDate(offer.issued_at)}</div>
           <div>💰 <strong>Package:</strong> ${offer.package} LPA</div>
-          <div>📋 <strong>Status:</strong> ${offer.status==='accepted'?'<span class="badge badge-success">Accepted</span>':offer.status==='rejected'?'<span class="badge badge-danger">Declined</span>':'<span class="badge badge-warning">Pending</span>'}</div>
+          <div>📋 <strong>Status:</strong> ${offer.status==='accepted'?'<span class="badge badge-success">Accepted</span>':offer.status==='declined'?'<span class="badge badge-danger">Declined</span>':'<span class="badge badge-warning">Pending</span>'}</div>
         </div>
         ${offer.offer_letter_path?`<button class="btn btn-primary" onclick="window.open('/api/files/offer/${offer.offer_letter_path.split('/').pop()}','_blank')">📥 Download Offer Letter</button>`:''}
         ${offer.status==='pending'?`
           <div style="display:flex;gap:10px;margin-top:12px;">
             <button class="btn btn-success" onclick="respondOffer('accepted')">✓ Accept Offer</button>
-            <button class="btn" style="background:#FEE2E2;color:#991B1B;" onclick="respondOffer('rejected')">✗ Decline Offer</button>
+            <button class="btn" style="background:#FEE2E2;color:#991B1B;" onclick="respondOffer('declined')">✗ Decline Offer</button>
           </div>`:''
         }
       </div>`;
@@ -929,11 +940,25 @@ async function loadOffers() {
 }
 
 async function respondOffer(decision) {
-  if (!confirm(`Are you sure you want to ${decision} this offer?`)) return;
+  const normalized = decision === 'rejected' ? 'declined' : decision;
+  if (!currentOffer?.id) { toast('No pending offer found.','error'); return; }
+  if (!confirm(`Are you sure you want to ${normalized} this offer?`)) return;
   try {
-    const r = await fetch(`${API}/student/offer/respond`, { method:'POST', headers: authH(), body: JSON.stringify({ response: decision }) });
+    const r = await fetch(`${API}/student/offer/respond`, {
+      method:'POST',
+      headers: authH(),
+      body: JSON.stringify({ offer_id: currentOffer.id, response: normalized })
+    });
     const d = await r.json();
-    if (d.success) { toast(decision==='accepted'?'Offer accepted! 🎉 You are now placed!':'Offer declined.'); loadOffers(); if (decision==='accepted') { user.is_placed = 1; localStorage.setItem('placemat_user', JSON.stringify(user)); } }
+    if (d.success) {
+      toast(normalized==='accepted' ? 'Offer accepted! 🎉 You are now placed!' : 'Offer declined.');
+      if (normalized === 'accepted') {
+        user.is_placed = 1;
+        localStorage.setItem('placemat_user', JSON.stringify(user));
+      }
+      await loadDashboard();
+      await loadOffers();
+    }
     else toast(d.message,'error');
   } catch(e) { toast('Server error','error'); }
 }
@@ -977,7 +1002,7 @@ async function loadProfile() {
     document.getElementById('pBio').value     = profile.bio || '';
     document.getElementById('profileName').textContent = profile.name;
     document.getElementById('profileRoll').textContent = profile.roll_number;
-    document.getElementById('profileAvatar').textContent = profile.name[0]?.toUpperCase();
+    document.getElementById('profileAvatar').textContent = (profile.name || 'S')[0].toUpperCase();
     if (profile.branch) document.getElementById('pBranch').value = profile.branch;
     if (profile.year)   document.getElementById('pYear').value   = profile.year;
     if (profile.is_placed) {
@@ -1138,6 +1163,17 @@ async function loadQueries() {
 }
 
 // HELPERS
+function safeParseArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
 function fmtDateTime(d) { if (!d) return '—'; return new Date(d).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
 function appBadge(s) {
