@@ -67,6 +67,10 @@ npx serve placemat-frontend
 # Visit: http://localhost:3000
 ```
 
+> ⚠️ Auth/API actions need the backend running.  
+> Start backend (`placemat-backend`) on `http://localhost:5000` before testing login/register.  
+> The frontend now auto-routes `/api/*` calls to `localhost:5000` when opened on another local port (like `3000`).
+
 ### Option C — Integrated with Backend
 Place the `frontend/` folder inside your existing Node.js project and serve statically:
 ```js

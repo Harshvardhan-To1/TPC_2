@@ -121,10 +121,14 @@ function redirectIfLoggedIn() {
 }
 
 /* ─── API HELPER ────────────────────────────────────────── */
-const API_BASE = '/api';   // adjust if needed
+const API_BASE = window.PLACEMAT_API_BASE || '/api';
 
 async function apiPost(endpoint, data) {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const url = typeof window.getApiUrl === 'function'
+    ? window.getApiUrl(endpoint)
+    : `${API_BASE}${endpoint}`;
+
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
