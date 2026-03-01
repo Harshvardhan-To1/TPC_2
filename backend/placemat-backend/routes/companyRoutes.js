@@ -14,6 +14,8 @@ const companyCtrl = require('../controllers/companyController');
 // ─── AUTH (public) ────────────────────────────────────────────
 router.post('/auth/login',    sanitizeInputs, authCtrl.login);
 router.post('/auth/register', sanitizeInputs, authCtrl.register);
+router.post('/auth/verify-email', sanitizeInputs, authCtrl.verifyEmail);
+router.post('/auth/resend-verification', sanitizeInputs, authCtrl.resendVerification);
 
 // ─── PROTECTED ────────────────────────────────────────────────
 router.use(authenticateToken, authorizeRoles('company'));

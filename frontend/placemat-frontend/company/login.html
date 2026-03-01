@@ -94,6 +94,28 @@
               <span class="btn-text">Sign In →</span>
             </button>
           </form>
+
+          <div id="companyVerifyBox" style="display:none; margin-top:18px; padding:14px; border:1px solid #D1FAE5; border-radius:12px; background:#F0FDF4;">
+            <div style="font-size:14px; font-weight:700; color:#065F46; margin-bottom:6px;">Verify company email</div>
+            <div style="font-size:12px; color:#4B5563; margin-bottom:10px;">
+              Verify your email before login. After verification, admin approval is still required.
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="companyVerifyEmail">Official Email</label>
+              <input type="email" id="companyVerifyEmail" class="form-input" placeholder="hr@company.com" />
+              <span class="form-error" id="companyVerifyEmailError"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="companyVerifyCode">Verification Code</label>
+              <input type="text" id="companyVerifyCode" class="form-input" placeholder="6-digit code" />
+              <span class="form-error" id="companyVerifyCodeError"></span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn-auth-submit" id="companyVerifyBtn" style="flex:1;" onclick="handleCompanyVerifyEmail()">Verify Email</button>
+              <button type="button" class="btn-auth-submit" id="companyResendBtn" style="flex:1; background:linear-gradient(135deg,#047857,#10B981);" onclick="handleCompanyResendCode()">Resend Code</button>
+            </div>
+            <div id="companyVerifyHint" style="margin-top:8px; font-size:12px; color:#4B5563;"></div>
+          </div>
         </div>
 
         <!-- REGISTER FORM -->
@@ -198,6 +220,26 @@
   <script>
     redirectIfLoggedIn();
 
+    function showLoginAlert(type, msg) {
+      const alertEl = document.getElementById('authAlertLogin');
+      alertEl.className = `auth-alert ${type} show`;
+      alertEl.innerHTML = `<span>${type === 'error' ? '⚠️' : '✅'}</span> ${msg}`;
+    }
+
+    function showCompanyVerifyBox(email = '') {
+      const box = document.getElementById('companyVerifyBox');
+      const emailInput = document.getElementById('companyVerifyEmail');
+      box.style.display = 'block';
+      if (email && emailInput && !emailInput.value) emailInput.value = email;
+    }
+
+    function setCompanyVerifyHint(message, isError = false) {
+      const hint = document.getElementById('companyVerifyHint');
+      if (!hint) return;
+      hint.textContent = message || '';
+      hint.style.color = isError ? '#DC2626' : '#4B5563';
+    }
+
     /* Tab switching */
     function switchTab(tab) {
       const loginSection    = document.getElementById('loginSection');
@@ -226,9 +268,20 @@
       }
     }
 
+    const urlParams = new URLSearchParams(window.location.search);
+
     /* Check URL param for direct registration link */
-    if (new URLSearchParams(window.location.search).get('action') === 'register') {
+    if (urlParams.get('action') === 'register') {
       switchTab('register');
+    }
+    if (urlParams.get('verify') === '1') {
+      switchTab('login');
+      const emailFromQuery = urlParams.get('email') || '';
+      if (emailFromQuery) {
+        document.getElementById('loginEmail').value = emailFromQuery;
+      }
+      showCompanyVerifyBox(emailFromQuery);
+      setCompanyVerifyHint('Enter your verification code, then sign in.');
     }
 
     /* Company Login */
@@ -246,13 +299,6 @@
 
       setButtonLoading('loginBtn', true);
 
-      // Temporarily show alert in login section
-      const alertEl = document.getElementById('authAlertLogin');
-      function showLoginAlert(type, msg) {
-        alertEl.className = `auth-alert ${type} show`;
-        alertEl.innerHTML = `<span>${type === 'error' ? '⚠️' : '✅'}</span> ${msg}`;
-      }
-
       try {
         const data = await apiPost('/company/auth/login', { email, password });
 
@@ -260,6 +306,11 @@
           saveAuth(data.token, data.user);
           showLoginAlert('success', 'Login successful! Redirecting...');
           setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+        } else if (data.requires_email_verification) {
+          showCompanyVerifyBox(data.email || email);
+          setCompanyVerifyHint('Please verify your email before signing in.');
+          showLoginAlert('error', data.message || 'Email verification is required.');
+          setButtonLoading('loginBtn', false);
         } else {
           showLoginAlert('error', data.message || 'Invalid credentials.');
           setButtonLoading('loginBtn', false);
@@ -306,7 +357,15 @@
         });
 
         if (data.success) {
-          showRegAlert('success', 'Registration submitted! Await admin approval to login.');
+          const debugCode = data.debug_verification_code ? ` Dev code: ${data.debug_verification_code}` : '';
+          showRegAlert(
+            'success',
+            `Registration submitted. Verify your email first, then wait for admin approval.${debugCode}`
+          );
+          switchTab('login');
+          document.getElementById('loginEmail').value = email;
+          showCompanyVerifyBox(email);
+          setCompanyVerifyHint('Use the verification code sent to your email.');
           document.getElementById('registerForm').reset();
           setButtonLoading('regBtn', false);
         } else {
@@ -316,6 +375,67 @@
       } catch (err) {
         showRegAlert('error', 'Server error. Please try again.');
         setButtonLoading('regBtn', false);
+      }
+    }
+
+    async function handleCompanyVerifyEmail() {
+      clearAllErrors();
+
+      const email = document.getElementById('companyVerifyEmail').value.trim();
+      const code = document.getElementById('companyVerifyCode').value.trim();
+
+      let valid = true;
+      if (!validateEmail(email)) {
+        showFieldError('companyVerifyEmail', 'Valid email required.');
+        valid = false;
+      }
+      if (!/^\d{6}$/.test(code)) {
+        showFieldError('companyVerifyCode', 'Enter the 6-digit code.');
+        valid = false;
+      }
+      if (!valid) return;
+
+      setButtonLoading('companyVerifyBtn', true);
+      try {
+        const data = await apiPost('/company/auth/verify-email', { email, code });
+        if (data.success) {
+          setCompanyVerifyHint('Email verified. Wait for admin approval, then sign in.');
+          showLoginAlert('success', data.message || 'Email verified successfully.');
+        } else {
+          setCompanyVerifyHint(data.message || 'Verification failed.', true);
+          showLoginAlert('error', data.message || 'Verification failed.');
+        }
+      } catch (err) {
+        showLoginAlert('error', 'Server error. Please try again.');
+      } finally {
+        setButtonLoading('companyVerifyBtn', false);
+      }
+    }
+
+    async function handleCompanyResendCode() {
+      clearAllErrors();
+
+      const email = document.getElementById('companyVerifyEmail').value.trim();
+      if (!validateEmail(email)) {
+        showFieldError('companyVerifyEmail', 'Valid email required.');
+        return;
+      }
+
+      setButtonLoading('companyResendBtn', true);
+      try {
+        const data = await apiPost('/company/auth/resend-verification', { email });
+        if (data.success) {
+          const debugCode = data.debug_verification_code ? ` Dev code: ${data.debug_verification_code}` : '';
+          setCompanyVerifyHint(`Code sent. ${debugCode}`.trim());
+          showLoginAlert('success', data.message || 'Verification code sent.');
+        } else {
+          setCompanyVerifyHint(data.message || 'Could not resend code.', true);
+          showLoginAlert('error', data.message || 'Could not resend code.');
+        }
+      } catch (err) {
+        showLoginAlert('error', 'Server error. Please try again.');
+      } finally {
+        setButtonLoading('companyResendBtn', false);
       }
     }
   </script>

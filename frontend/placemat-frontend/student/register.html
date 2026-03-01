@@ -219,8 +219,13 @@
         });
 
         if (data.success) {
-          showAlert('success', 'Account created! Please log in to continue.');
-          setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+          const debugCode = data.debug_verification_code
+            ? ` Dev code: ${data.debug_verification_code}`
+            : '';
+          showAlert('success', `Account created! Verify your email before login.${debugCode}`);
+          setTimeout(() => {
+            window.location.href = `login.html?verify=1&email=${encodeURIComponent(email)}`;
+          }, 1800);
         } else {
           showAlert('error', data.message || 'Registration failed. Please try again.');
           setButtonLoading('submitBtn', false);

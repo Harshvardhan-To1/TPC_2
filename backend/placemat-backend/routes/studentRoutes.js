@@ -15,6 +15,8 @@ const studentCtrl = require('../controllers/studentController');
 router.get('/placed-students', studentCtrl.getPlacedStudentsPublic);
 router.post('/auth/login',    sanitizeInputs, authCtrl.login);
 router.post('/auth/register', sanitizeInputs, authCtrl.register);
+router.post('/auth/verify-email', sanitizeInputs, authCtrl.verifyEmail);
+router.post('/auth/resend-verification', sanitizeInputs, authCtrl.resendVerification);
 
 // ─── PROTECTED ────────────────────────────────────────────────
 router.use(authenticateToken, authorizeRoles('student'));

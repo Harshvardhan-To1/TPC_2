@@ -110,6 +110,28 @@
 
         </form>
 
+        <div id="emailVerificationBox" style="display:none; margin-top:18px; padding:14px; border:1px solid #E8E6F0; border-radius:12px; background:#FAF9FF;">
+          <div style="font-size:14px; font-weight:700; color:#1C1C2E; margin-bottom:6px;">Verify your email</div>
+          <div style="font-size:12px; color:#6B7280; margin-bottom:10px;">
+            Enter the verification code sent to your email before signing in.
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="verifyEmail">Email Address</label>
+            <input type="email" id="verifyEmail" class="form-input" placeholder="you@example.com" />
+            <span class="form-error" id="verifyEmailError"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="verifyCode">Verification Code</label>
+            <input type="text" id="verifyCode" class="form-input" placeholder="6-digit code" />
+            <span class="form-error" id="verifyCodeError"></span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn-auth-submit" id="verifyBtn" style="flex:1;" onclick="handleVerifyEmail()">Verify Email</button>
+            <button type="button" class="btn-auth-submit" id="resendBtn" style="flex:1; background:linear-gradient(135deg,#7C6DCA,#A194E8);" onclick="handleResendCode()">Resend Code</button>
+          </div>
+          <div id="verifyHint" style="margin-top:8px; font-size:12px; color:#6B7280;"></div>
+        </div>
+
         <div style="margin-top:28px; text-align:center; font-size:13px; color:#9CA3AF;">
           ← <a href="../index.html" style="color:#6C5FBC; font-weight:500; text-decoration:none;">Return to homepage</a>
         </div>
@@ -124,8 +146,36 @@
 
   <script src="../common/js/auth.js"></script>
   <script>
-    // Redirect if already logged in as student
     redirectIfLoggedIn();
+    initVerifyPromptFromUrl();
+
+    function showVerifyBox(email = '') {
+      const box = document.getElementById('emailVerificationBox');
+      const emailInput = document.getElementById('verifyEmail');
+      box.style.display = 'block';
+      if (email && emailInput && !emailInput.value) emailInput.value = email;
+    }
+
+    function setVerifyHint(message, isError = false) {
+      const hint = document.getElementById('verifyHint');
+      if (!hint) return;
+      hint.textContent = message || '';
+      hint.style.color = isError ? '#DC2626' : '#6B7280';
+    }
+
+    function initVerifyPromptFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const shouldVerify = params.get('verify') === '1';
+      const email = params.get('email') || '';
+      if (email) {
+        document.getElementById('email').value = email;
+        document.getElementById('verifyEmail').value = email;
+      }
+      if (shouldVerify) {
+        showVerifyBox(email);
+        setVerifyHint('Enter the code sent to your email, then sign in.');
+      }
+    }
 
     async function handleLogin(e) {
       e.preventDefault();
@@ -135,7 +185,6 @@
       const email    = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
 
-      // Client-side validation
       let valid = true;
       if (!email || !validateEmail(email)) {
         showFieldError('email', 'Please enter a valid email address.');
@@ -156,6 +205,11 @@
           saveAuth(data.token, data.user);
           showAlert('success', 'Login successful! Redirecting to dashboard...');
           setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+        } else if (data.requires_email_verification) {
+          showVerifyBox(data.email || email);
+          setVerifyHint('Please verify your email before signing in.');
+          showAlert('error', data.message || 'Email verification is required.');
+          setButtonLoading('submitBtn', false);
         } else {
           showAlert('error', data.message || 'Invalid email or password.');
           setButtonLoading('submitBtn', false);
@@ -163,6 +217,70 @@
       } catch (err) {
         showAlert('error', 'Server error. Please try again later.');
         setButtonLoading('submitBtn', false);
+      }
+    }
+
+    async function handleVerifyEmail() {
+      clearAllErrors();
+      hideAlert();
+
+      const email = document.getElementById('verifyEmail').value.trim();
+      const code = document.getElementById('verifyCode').value.trim();
+
+      let valid = true;
+      if (!validateEmail(email)) {
+        showFieldError('verifyEmail', 'Enter a valid email.');
+        valid = false;
+      }
+      if (!/^\d{6}$/.test(code)) {
+        showFieldError('verifyCode', 'Enter the 6-digit code.');
+        valid = false;
+      }
+      if (!valid) return;
+
+      setButtonLoading('verifyBtn', true);
+      try {
+        const data = await apiPost('/student/auth/verify-email', { email, code });
+        if (data.success) {
+          setVerifyHint('Email verified. You can now sign in.');
+          showAlert('success', data.message || 'Email verified.');
+          document.getElementById('email').value = email;
+        } else {
+          showAlert('error', data.message || 'Verification failed.');
+          setVerifyHint(data.message || 'Verification failed.', true);
+        }
+      } catch (err) {
+        showAlert('error', 'Server error. Please try again.');
+      } finally {
+        setButtonLoading('verifyBtn', false);
+      }
+    }
+
+    async function handleResendCode() {
+      clearAllErrors();
+      hideAlert();
+
+      const email = document.getElementById('verifyEmail').value.trim();
+      if (!validateEmail(email)) {
+        showFieldError('verifyEmail', 'Enter a valid email.');
+        return;
+      }
+
+      setButtonLoading('resendBtn', true);
+      try {
+        const data = await apiPost('/student/auth/resend-verification', { email });
+        if (data.success) {
+          const debugCode = data.debug_verification_code ? ` Dev code: ${data.debug_verification_code}` : '';
+          setVerifyHint(`Code sent. ${debugCode}`.trim());
+          showAlert('success', data.message || 'Verification code sent.');
+        } else {
+          showAlert('error', data.message || 'Could not resend code.');
+          setVerifyHint(data.message || 'Could not resend code.', true);
+        }
+      } catch (err) {
+        showAlert('error', 'Server error. Please try again.');
+      } finally {
+        setButtonLoading('resendBtn', false);
       }
     }
   </script>

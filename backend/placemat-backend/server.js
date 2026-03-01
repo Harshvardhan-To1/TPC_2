@@ -24,6 +24,7 @@ const adminRoutes   = require('./routes/adminRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const fileRoutes    = require('./routes/fileRoutes');
+const chatbotRoutes = require('./routes/chatbotRoutes');
 
 // ─── INIT APP ─────────────────────────────────────────────────
 const app = express();
@@ -71,6 +72,7 @@ app.use('/api/admin',   adminRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/files',   fileRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // ─── HEALTH CHECK ─────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
