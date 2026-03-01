@@ -587,6 +587,8 @@
   </style>
 
   <script>
+  const chatHistory = [];
+
   function openChatbot() {
     document.getElementById('chatbotOverlay').style.display = 'flex';
     document.getElementById('chatInput').focus();
@@ -603,13 +605,34 @@
     sendChat();
   }
 
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function formatBotText(text) {
+    return escapeHtml(text).replace(/\n/g, '<br>');
+  }
+
+  function pushHistory(role, content) {
+    chatHistory.push({ role, content });
+    if (chatHistory.length > 12) {
+      chatHistory.splice(0, chatHistory.length - 12);
+    }
+  }
+
   function addMessage(text, isUser) {
     const c = document.getElementById('chatMessages');
     const div = document.createElement('div');
-    div.style.cssText = `display:flex;gap:8px;align-items:flex-start;${isUser?'flex-direction:row-reverse;':''}`; 
+    const rendered = isUser ? escapeHtml(text) : formatBotText(text);
+    div.style.cssText = `display:flex;gap:8px;align-items:flex-start;${isUser?'flex-direction:row-reverse;':''}`;
     div.innerHTML = `
       <div style="width:30px;height:30px;border-radius:8px;background:${isUser?'linear-gradient(135deg,#3B82F6,#60A5FA)':'linear-gradient(135deg,#6C5FBC,#9D8FE0)'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${isUser?'👤':'🤖'}</div>
-      <div style="background:${isUser?'linear-gradient(135deg,#6C5FBC,#9D8FE0)':'white'};color:${isUser?'white':'#1C1C2E'};border-radius:${isUser?'12px 0 12px 12px':'0 12px 12px 12px'};padding:10px 14px;font-size:13px;font-family:'Poppins',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.06);max-width:270px;">${text}</div>
+      <div style="background:${isUser?'linear-gradient(135deg,#6C5FBC,#9D8FE0)':'white'};color:${isUser?'white':'#1C1C2E'};border-radius:${isUser?'12px 0 12px 12px':'0 12px 12px 12px'};padding:10px 14px;font-size:13px;font-family:'Poppins',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.06);max-width:270px;">${rendered}</div>
     `;
     c.appendChild(div);
     c.scrollTop = c.scrollHeight;
@@ -633,25 +656,63 @@
     c.scrollTop = c.scrollHeight;
   }
 
-  const botResponses = {
-    'register': 'To register on PlaceMate:\n1. Click <strong>Sign Up</strong> on the landing page\n2. Select your role (Student/Company)\n3. Fill in your details\n4. Verify and login!\n\nStudents need their roll number, branch, and CGPA to register.',
-    'eligibility': 'Eligibility criteria varies by company and drive. Generally:\n• Minimum CGPA (set by company, usually 6.0–7.5)\n• Specific branches (CSE, IT, MCA, etc.)\n• No active backlogs (for most companies)\n• Year of graduation\n\nCheck each drive for its specific criteria!',
-    'resume': 'To upload your resume:\n1. Login to your Student Dashboard\n2. Go to <strong>My Profile</strong>\n3. Click <strong>Upload Resume</strong>\n4. Select your PDF file (max 5MB)\n\n💡 <strong>Tip:</strong> Your resume must be uploaded before you can apply for any drive!',
-    'apply': 'To apply for a job drive:\n1. Go to <strong>Job Listings</strong> in your dashboard\n2. Browse active drives\n3. Click on a drive to see details\n4. Click <strong>Apply Now</strong> if you are eligible\n\n⚠️ Make sure your profile is 100% complete before applying!',
-    'interview': 'Interview tips for campus placements:\n• Prepare DSA basics (arrays, trees, graphs)\n• Know your resume projects deeply\n• Practice communication skills\n• Research the company beforehand\n• Check your interview schedule in the <strong>Interviews</strong> section of your dashboard.',
-    'placed': 'Once placed:\n• You will receive an offer letter in your dashboard\n• Accept or decline the offer\n• Once accepted, you are marked as <strong>Placed</strong>\n• Placed students cannot apply to other companies\n\nCongratulations in advance! 🎉',
-    'default': 'Thanks for your question! For detailed placement information, please:\n• Login to your Student Dashboard\n• Contact the Placement Cell at SCSIT DAVV\n• Submit a query through the <strong>Queries</strong> section\n\nIs there anything specific about the placement process I can help with?'
-  };
+  function getFallbackReply(msg) {
+    const m = String(msg || '').toLowerCase();
+    if (m.includes('register') || m.includes('sign up') || m.includes('create')) {
+      return [
+        'To register on PlaceMate:',
+        '1) Click Sign Up on the landing page',
+        '2) Select Student or Company role',
+        '3) Fill details and submit',
+        '4) Verify your email code',
+        '5) Login (company login also needs admin approval)'
+      ].join('\n');
+    }
+    if (m.includes('eligib') || m.includes('criteria') || m.includes('cgpa') || m.includes('backlog')) {
+      return [
+        'Eligibility usually depends on each drive:',
+        '- Minimum CGPA',
+        '- Eligible branches',
+        '- Graduation year',
+        '- Backlog rules',
+        'Please check drive details before applying.'
+      ].join('\n');
+    }
+    if (m.includes('resume') || m.includes('upload') || m.includes('cv')) {
+      return [
+        'Resume upload steps:',
+        '1) Login as student',
+        '2) Open My Profile',
+        '3) Upload PDF resume (max 5MB)',
+        'Tip: Keep resume concise and role-specific.'
+      ].join('\n');
+    }
+    if (m.includes('interview') || m.includes('prepare') || m.includes('tips')) {
+      return [
+        'Interview prep tips:',
+        '- Revise DSA basics',
+        '- Be ready to explain projects',
+        '- Practice HR communication',
+        '- Research company and role'
+      ].join('\n');
+    }
+    return 'I can help with registration, eligibility, resume tips, and interview prep. What would you like to know?';
+  }
 
-  function getBotReply(msg) {
-    const m = msg.toLowerCase();
-    if (m.includes('register') || m.includes('sign up') || m.includes('create')) return botResponses.register;
-    if (m.includes('eligib') || m.includes('criteria') || m.includes('cgpa') || m.includes('backlog')) return botResponses.eligibility;
-    if (m.includes('resume') || m.includes('upload') || m.includes('cv')) return botResponses.resume;
-    if (m.includes('apply') || m.includes('job') || m.includes('drive')) return botResponses.apply;
-    if (m.includes('interview') || m.includes('prepare') || m.includes('tips')) return botResponses.interview;
-    if (m.includes('placed') || m.includes('offer') || m.includes('selected')) return botResponses.placed;
-    return botResponses.default;
+  async function fetchChatbotReply(message) {
+    const r = await fetch('/api/chatbot/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        history: chatHistory.slice(-8)
+      })
+    });
+    const d = await r.json();
+    if (!r.ok || !d.success || !d.data?.reply) {
+      throw new Error(d.message || 'Chatbot request failed');
+    }
+    return d.data.reply;
   }
 
   async function sendChat() {
@@ -661,10 +722,20 @@
     input.value = '';
     document.getElementById('quickReplies').style.display = 'none';
     addMessage(msg, true);
+    pushHistory('user', msg);
     addTyping();
-    await new Promise(r => setTimeout(r, 900 + Math.random()*600));
-    document.getElementById('typingIndicator')?.remove();
-    addMessage(getBotReply(msg), false);
+
+    let reply = '';
+    try {
+      reply = await fetchChatbotReply(msg);
+    } catch (err) {
+      reply = getFallbackReply(msg);
+    } finally {
+      document.getElementById('typingIndicator')?.remove();
+    }
+
+    addMessage(reply, false);
+    pushHistory('assistant', reply);
   }
   </script>
 </body>
