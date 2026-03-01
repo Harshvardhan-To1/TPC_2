@@ -53,13 +53,29 @@ Search for this comment pattern in HTML files and replace with `<img>` tags:
 
 ---
 
-## 🚀 How to Run (Frontend Only)
+## 🚀 How to Run
+
+### Recommended — Full app with one command
+
+From repository root:
+
+```bash
+cd backend/placemat-backend
+npm install
+cp .env.example .env
+cd ../..
+node server.js
+```
+
+Open `http://localhost:5000` (frontend + API together).
+
+## Frontend-only modes
 
 ### Option A — Simple file:// opening
 Just double-click `index.html` to open in browser.
 > Note: API calls will fail (no backend). Login/register forms show client-side validation only.
 
-### Option B — With Live Server (recommended)
+### Option B — With Live Server
 ```bash
 # Install VS Code extension "Live Server" and click "Go Live"
 # OR use npx:
