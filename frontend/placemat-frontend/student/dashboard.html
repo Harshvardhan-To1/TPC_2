@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Student Dashboard – Placemat</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
       --primary: #6C5FBC;
@@ -24,8 +24,8 @@
       --white: #ffffff;
       --sidebar-w: 255px;
       --topbar-h: 68px;
-      --font: 'Poppins', sans-serif;
-      --font2: 'Syne', sans-serif;
+      --font: 'Inter', 'Segoe UI', sans-serif;
+      --font2: 'Manrope', 'Inter', sans-serif;
       --radius: 16px;
       --shadow: 0 4px 20px rgba(108,95,188,0.09);
       --shadow-lg: 0 8px 36px rgba(108,95,188,0.16);
@@ -619,6 +619,11 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDashboard();
   renderProjects();
   renderCerts();
+
+  const initialSection = new URLSearchParams(window.location.search).get('section');
+  if (initialSection && initialSection !== 'dashboard' && document.getElementById(`sec-${initialSection}`)) {
+    showSection(initialSection);
+  }
 });
 
 function authH() { return { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` }; }
@@ -628,6 +633,7 @@ function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('sec-' + name)?.classList.add('active');
+  document.querySelector(`.nav-item[onclick="showSection('${name}')"]`)?.classList.add('active');
   const titles = { dashboard:['Dashboard','Your placement overview'], jobs:['Job Listings','Browse active drives'], applications:['My Applications','Track your applications'], interviews:['Interviews','Upcoming interviews'], offers:['Offers','Your offer letters'], notifications:['Notifications','Updates & announcements'], profile:['My Profile','Manage your profile'], queries:['Queries','Get support'] };
   const [t,s] = titles[name] || [name,''];
   document.getElementById('pageTitle').textContent = t;
