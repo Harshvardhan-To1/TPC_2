@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Register – Placemat</title>
+  <link rel="stylesheet" href="../common/css/auth.css" />
+  <style>
+    .auth-side-panel { background: linear-gradient(155deg, #6C5FBC 0%, #9B8FE2 100%); }
+    .auth-role-badge { background: #f0eeff; color: #6C5FBC; }
+    .auth-card { max-width: 920px; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="auth-navbar">
+    <div class="auth-nav-inner">
+      <a href="../index.html" class="auth-logo">
+        <!--
+          INSERT LOGO: <img src="../common/images/placemat-logo.png" alt="Placemat" />
+        -->
+        <span style="font-size:26px;">🎓</span>
+        <span class="auth-logo-text">PLACEMATE</span>
+      </a>
+      <a href="../index.html" class="auth-back-link">← Back to Home</a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="auth-main">
+    <div class="auth-card wide">
+
+      <!-- LEFT PANEL -->
+      <div class="auth-side-panel">
+        <div class="side-panel-icon">🚀</div>
+        <h2 class="side-panel-title">Start Your Journey</h2>
+        <p class="side-panel-desc">
+          Create your student profile and get access to hundreds of top company placements, interview prep, and career resources.
+        </p>
+        <div class="side-panel-features">
+          <div class="feature-item"><span class="feature-dot"></span> Free registration</div>
+          <div class="feature-item"><span class="feature-dot"></span> Instant drive notifications</div>
+          <div class="feature-item"><span class="feature-dot"></span> Resume builder & upload</div>
+          <div class="feature-item"><span class="feature-dot"></span> Interview preparation tips</div>
+          <div class="feature-item"><span class="feature-dot"></span> Real-time placement tracking</div>
+        </div>
+      </div>
+
+      <!-- FORM -->
+      <div class="auth-form-section" style="overflow-y:auto; max-height:90vh;">
+
+        <div class="auth-role-badge">🎓 Student Registration</div>
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-subtitle">
+          Already registered? <a href="login.html">Sign in here</a>
+        </p>
+
+        <div class="auth-alert" id="authAlert"></div>
+
+        <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)" novalidate>
+
+          <!-- Name + Roll Number -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="name">Full Name *</label>
+              <input type="text" id="name" class="form-input" placeholder="e.g. Rahul Sharma" required />
+              <span class="form-error" id="nameError"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="rollNumber">Roll Number *</label>
+              <input type="text" id="rollNumber" class="form-input" placeholder="e.g. 0827CS21001" required />
+              <span class="form-error" id="rollNumberError"></span>
+            </div>
+          </div>
+
+          <!-- Email + Phone -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="email">Email Address *</label>
+              <input type="email" id="email" class="form-input" placeholder="you@example.com" required />
+              <span class="form-error" id="emailError"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone Number</label>
+              <input type="tel" id="phone" class="form-input" placeholder="+91 9XXXXXXXXX" />
+              <span class="form-error" id="phoneError"></span>
+            </div>
+          </div>
+
+          <!-- Branch + Year -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="branch">Branch *</label>
+              <select id="branch" class="form-input form-select" required>
+                <option value="">Select Branch</option>
+                <option>CSE</option>
+                <option>IT</option>
+                <option>ECE</option>
+                <option>EEE</option>
+                <option>ME</option>
+                <option>CE</option>
+                <option>MCA</option>
+                <option>MBA</option>
+              </select>
+              <span class="form-error" id="branchError"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="year">Current Year *</label>
+              <select id="year" class="form-input form-select" required>
+                <option value="">Select Year</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+              <span class="form-error" id="yearError"></span>
+            </div>
+          </div>
+
+          <!-- CGPA -->
+          <div class="form-group">
+            <label class="form-label" for="cgpa">CGPA (out of 10) *</label>
+            <input
+              type="number"
+              id="cgpa"
+              class="form-input"
+              placeholder="e.g. 8.5"
+              min="0" max="10" step="0.01"
+              required
+            />
+            <span class="form-error" id="cgpaError"></span>
+          </div>
+
+          <!-- Password + Confirm -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="password">Password *</label>
+              <div class="form-input-wrap">
+                <input type="password" id="password" class="form-input has-icon" placeholder="Min 8 characters" required />
+                <span class="input-icon-right" onclick="togglePassword('password', this)">👁️</span>
+              </div>
+              <span class="form-error" id="passwordError"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="confirmPassword">Confirm Password *</label>
+              <div class="form-input-wrap">
+                <input type="password" id="confirmPassword" class="form-input has-icon" placeholder="Re-enter password" required />
+                <span class="input-icon-right" onclick="togglePassword('confirmPassword', this)">👁️</span>
+              </div>
+              <span class="form-error" id="confirmPasswordError"></span>
+            </div>
+          </div>
+
+          <!-- Terms -->
+          <div class="form-group" style="flex-direction:row; align-items:flex-start; gap:10px;">
+            <input type="checkbox" id="terms" style="margin-top:3px; accent-color:#6C5FBC; width:16px; height:16px; flex-shrink:0;" required />
+            <label for="terms" style="font-size:13px; color:#6B7280; line-height:1.5;">
+              I agree to the <a href="#" style="color:#6C5FBC; font-weight:600;">Terms of Service</a> and
+              <a href="#" style="color:#6C5FBC; font-weight:600;">Privacy Policy</a>
+            </label>
+          </div>
+          <span class="form-error" id="termsError"></span>
+
+          <!-- Submit -->
+          <button type="submit" class="btn-auth-submit" id="submitBtn">
+            <div class="btn-spinner"></div>
+            <span class="btn-text">Create Account →</span>
+          </button>
+
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer class="auth-footer">
+    Made with ❤️ by SCSIT DAVV | Campus Placement Cell 2025–26
+  </footer>
+
+  <script src="../common/js/auth.js"></script>
+  <script>
+    redirectIfLoggedIn();
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      clearAllErrors();
+      hideAlert();
+
+      const name            = document.getElementById('name').value.trim();
+      const rollNumber      = document.getElementById('rollNumber').value.trim();
+      const email           = document.getElementById('email').value.trim();
+      const phone           = document.getElementById('phone').value.trim();
+      const branch          = document.getElementById('branch').value;
+      const year            = document.getElementById('year').value;
+      const cgpa            = parseFloat(document.getElementById('cgpa').value);
+      const password        = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const terms           = document.getElementById('terms').checked;
+
+      let valid = true;
+
+      if (!name)          { showFieldError('name', 'Full name is required.'); valid = false; }
+      if (!rollNumber)    { showFieldError('rollNumber', 'Roll number is required.'); valid = false; }
+      if (!validateEmail(email)) { showFieldError('email', 'Enter a valid email address.'); valid = false; }
+      if (!branch)        { showFieldError('branch', 'Please select your branch.'); valid = false; }
+      if (!year)          { showFieldError('year', 'Please select your year.'); valid = false; }
+      if (isNaN(cgpa) || cgpa < 0 || cgpa > 10) { showFieldError('cgpa', 'CGPA must be between 0 and 10.'); valid = false; }
+      if (!validatePassword(password)) { showFieldError('password', 'Password must be at least 8 characters.'); valid = false; }
+      if (password !== confirmPassword) { showFieldError('confirmPassword', 'Passwords do not match.'); valid = false; }
+      if (!terms) { showFieldError('terms', 'You must accept the terms to continue.'); valid = false; }
+
+      if (!valid) return;
+
+      setButtonLoading('submitBtn', true);
+
+      try {
+        const data = await apiPost('/student/auth/register', {
+          name, roll_number: rollNumber, email, phone, branch, year: parseInt(year), cgpa, password
+        });
+
+        if (data.success) {
+          showAlert('success', 'Account created! Please log in to continue.');
+          setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+        } else {
+          showAlert('error', data.message || 'Registration failed. Please try again.');
+          setButtonLoading('submitBtn', false);
+        }
+      } catch (err) {
+        showAlert('error', 'Server error. Please try again later.');
+        setButtonLoading('submitBtn', false);
+      }
+    }
+  </script>
+</body>
+</html>

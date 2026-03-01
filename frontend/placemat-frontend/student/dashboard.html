@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Dashboard – Placemat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #6C5FBC;
+      --primary-mid: #7B6DC8;
+      --primary-light: #9D8FE0;
+      --primary-pale: #F0EEFF;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --info: #3B82F6;
+      --dark: #1C1C2E;
+      --mid: #3D3D5C;
+      --light: #888;
+      --border: #E8E6F0;
+      --bg: #F5F4FF;
+      --white: #ffffff;
+      --sidebar-w: 255px;
+      --topbar-h: 68px;
+      --font: 'Poppins', sans-serif;
+      --font2: 'Syne', sans-serif;
+      --radius: 16px;
+      --shadow: 0 4px 20px rgba(108,95,188,0.09);
+      --shadow-lg: 0 8px 36px rgba(108,95,188,0.16);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: var(--bg); color: var(--dark); overflow-x: hidden; }
+
+    /* SIDEBAR */
+    .sidebar {
+      position: fixed; top: 0; left: 0;
+      width: var(--sidebar-w); height: 100vh;
+      background: linear-gradient(180deg, #1C1C2E 0%, #2A2050 100%);
+      display: flex; flex-direction: column; z-index: 100; overflow-y: auto;
+    }
+    .sidebar-logo { padding: 22px 18px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
+    .sidebar-logo-icon { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .sidebar-logo-text { color: white; font-weight: 700; font-size: 15px; font-family: var(--font2); }
+    .sidebar-logo-sub  { color: rgba(255,255,255,0.4); font-size: 11px; }
+
+    .sidebar-section { padding: 14px 10px 6px; }
+    .sidebar-label { color: rgba(255,255,255,0.3); font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; padding: 0 8px; margin-bottom: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 10px; color: rgba(255,255,255,0.55); font-size: 13.5px; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; margin-bottom: 2px; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: white; }
+    .nav-item.active { background: linear-gradient(135deg, rgba(108,95,188,0.45), rgba(108,95,188,0.2)); color: #C4B8FF; border: 1px solid rgba(108,95,188,0.35); }
+    .nav-item .ni { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+
+    .sidebar-footer { margin-top: auto; padding: 14px 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .student-mini { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.06); cursor: pointer; }
+    .student-avatar-sm { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+    .student-info .sname { color: white; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; }
+    .student-info .srole { color: rgba(255,255,255,0.4); font-size: 11px; }
+
+    /* TOPBAR */
+    .topbar { position: fixed; top: 0; left: var(--sidebar-w); right: 0; height: var(--topbar-h); background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 99; }
+    .page-title { font-size: 18px; font-weight: 700; color: var(--dark); font-family: var(--font2); }
+    .page-sub   { font-size: 12px; color: var(--light); margin-top: 1px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .topbar-btn { width: 38px; height: 38px; border-radius: 9px; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 17px; transition: all 0.2s; position: relative; }
+    .topbar-btn:hover { background: var(--primary-pale); border-color: var(--primary-light); }
+    .notif-dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: var(--danger); border-radius: 50%; border: 2px solid white; }
+
+    /* MAIN */
+    .main { margin-left: var(--sidebar-w); margin-top: var(--topbar-h); padding: 24px; min-height: calc(100vh - var(--topbar-h)); }
+    .section { display: none; animation: fadeIn 0.28s ease; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* WELCOME BANNER */
+    .welcome-banner {
+      background: linear-gradient(135deg, #2A1F6E 0%, #6C5FBC 60%, #9D8FE0 100%);
+      border-radius: var(--radius); padding: 24px 28px; margin-bottom: 22px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; overflow: hidden;
+    }
+    .welcome-banner::before { content:''; position:absolute; top:-30px; right:60px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.06); }
+    .welcome-banner::after  { content:''; position:absolute; bottom:-50px; right:-20px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.04); }
+    .wb-text h2 { color:white; font-size:20px; font-weight:700; margin-bottom:4px; font-family:var(--font2); }
+    .wb-text p  { color:rgba(255,255,255,0.72); font-size:13px; }
+    .wb-emoji   { font-size:56px; position:relative; z-index:1; }
+
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 16px; margin-bottom: 22px; }
+    .stat-card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; border: 1px solid var(--border); transition: transform 0.2s; cursor: pointer; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .stat-value { font-size: 26px; font-weight: 800; font-family: var(--font2); line-height: 1; margin-bottom: 3px; }
+    .stat-label { font-size: 12px; color: var(--light); font-weight: 500; }
+
+    /* CARD */
+    .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; margin-bottom: 18px; }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: 14px; font-weight: 700; color: var(--dark); font-family: var(--font2); }
+    .card-body { padding: 20px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: #FAF9FF; }
+    th { padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--light); text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--mid); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #FAFAFF; }
+
+    /* BADGE */
+    .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-success { background: #D1FAE5; color: #065F46; }
+    .badge-warning { background: #FEF3C7; color: #92400E; }
+    .badge-danger  { background: #FEE2E2; color: #991B1B; }
+    .badge-info    { background: #DBEAFE; color: #1E40AF; }
+    .badge-purple  { background: #EDE9FE; color: #6C5FBC; }
+    .badge-gray    { background: #F3F4F6; color: #6B7280; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 9px; border: none; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: #5A4DA3; box-shadow: 0 4px 14px rgba(108,95,188,0.4); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+    .btn-outline:hover { background: var(--primary-pale); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; border-radius: 7px; }
+    .btn-icon { padding: 7px; border-radius: 7px; background: var(--bg); border: 1px solid var(--border); color: var(--mid); cursor: pointer; font-size: 14px; transition: all 0.2s; }
+
+    /* FORM */
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--mid); margin-bottom: 5px; }
+    .form-input, .form-select, .form-textarea { width: 100%; padding: 9px 13px; border-radius: 9px; border: 1.5px solid var(--border); font-family: var(--font); font-size: 13px; color: var(--dark); background: white; transition: border-color 0.2s; outline: none; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(108,95,188,0.1); }
+    .form-textarea { resize: vertical; min-height: 85px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* FILTER BAR */
+    .filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-bar .form-input, .filter-bar .form-select { width: auto; min-width: 130px; max-width: 190px; }
+
+    /* PROGRESS */
+    .progress-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 99px; transition: width 0.6s ease; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(28,28,46,0.55); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 18px; width: 90%; max-width: 540px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.2); animation: modalIn 0.22s ease; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .modal-header { padding: 20px 22px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-size: 16px; font-weight: 700; font-family: var(--font2); }
+    .modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--light); padding: 4px; border-radius: 6px; }
+    .modal-close:hover { background: var(--bg); }
+    .modal-body { padding: 20px 22px; }
+    .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* JOB CARD */
+    .job-card { background: white; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 20px; transition: all 0.22s; cursor: pointer; }
+    .job-card:hover { border-color: var(--primary-light); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+    .job-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .job-logo { width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+    .job-title { font-size: 15px; font-weight: 700; color: var(--dark); margin-bottom: 2px; }
+    .job-company { font-size: 12px; color: var(--light); }
+    .job-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+    .job-tag { padding: 4px 10px; background: var(--primary-pale); color: var(--primary); border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .job-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .job-package { font-size: 15px; font-weight: 700; color: var(--success); }
+    .jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 16px; }
+
+    /* PROFILE COMPLETION */
+    .profile-complete-card { background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 18px; display: flex; align-items: center; gap: 20px; }
+    .pc-info { flex: 1; }
+    .pc-info h3 { color: white; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .pc-info p  { color: rgba(255,255,255,0.75); font-size: 12px; margin-bottom: 10px; }
+    .pc-progress { background: rgba(255,255,255,0.25); border-radius: 99px; height: 8px; overflow: hidden; }
+    .pc-progress-fill { height: 100%; background: white; border-radius: 99px; transition: width 0.6s; }
+    .pc-pct { color: white; font-size: 28px; font-weight: 800; font-family: var(--font2); flex-shrink: 0; }
+
+    /* STATUS TRACKER */
+    .status-track { display: flex; align-items: center; gap: 0; margin: 16px 0; }
+    .status-step { flex: 1; text-align: center; position: relative; }
+    .status-step::before { content:''; position:absolute; top:14px; left:-50%; width:100%; height:2px; background:var(--border); z-index:0; }
+    .status-step:first-child::before { display: none; }
+    .status-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border); background: white; display: flex; align-items: center; justify-content: center; font-size: 12px; margin: 0 auto 6px; position: relative; z-index: 1; }
+    .status-dot.done  { background: var(--success); border-color: var(--success); color: white; }
+    .status-dot.current { background: var(--primary); border-color: var(--primary); color: white; }
+    .status-label { font-size: 10px; color: var(--light); font-weight: 600; }
+
+    /* TOAST */
+    .toast-container { position: fixed; top: 76px; right: 18px; z-index: 9999; display: flex; flex-direction: column; gap: 7px; }
+    .toast { background: white; border-radius: 10px; padding: 12px 16px; box-shadow: 0 6px 24px rgba(0,0,0,0.12); border-left: 4px solid var(--primary); font-size: 13px; font-weight: 500; min-width: 260px; animation: toastIn 0.25s ease; display: flex; align-items: center; gap: 8px; }
+    .toast.error { border-color: var(--danger); }
+    .toast.success { border-color: var(--success); }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(80px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* MISC */
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--light); }
+    .empty-state .ei { font-size: 44px; margin-bottom: 10px; }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-overlay { display: flex; align-items: center; justify-content: center; padding: 36px; }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .tag-input-wrap { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1.5px solid var(--border); border-radius: 9px; min-height: 42px; cursor: text; }
+    .tag-chip { background: var(--primary-pale); color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .tag-chip button { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+    .tag-input { border: none; outline: none; font-family: var(--font); font-size: 13px; min-width: 100px; flex: 1; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">🎓</div>
+    <div>
+      <div class="sidebar-logo-text">PLACEMATE</div>
+      <div class="sidebar-logo-sub">Student Portal</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Overview</div>
+    <a class="nav-item active" onclick="showSection('dashboard')"><span class="ni">🏠</span> Dashboard</a>
+    <a class="nav-item" onclick="showSection('notifications')"><span class="ni">🔔</span> Notifications</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Placement</div>
+    <a class="nav-item" onclick="showSection('jobs')"><span class="ni">💼</span> Job Listings</a>
+    <a class="nav-item" onclick="showSection('applications')"><span class="ni">📋</span> My Applications</a>
+    <a class="nav-item" onclick="showSection('interviews')"><span class="ni">📅</span> Interviews</a>
+    <a class="nav-item" onclick="showSection('offers')"><span class="ni">📜</span> Offers</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Profile</div>
+    <a class="nav-item" onclick="showSection('profile')"><span class="ni">👤</span> My Profile</a>
+    <a class="nav-item" onclick="showSection('queries')"><span class="ni">💬</span> Queries</a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="student-mini">
+      <div class="student-avatar-sm" id="sidebarAvatar">S</div>
+      <div class="student-info">
+        <div class="sname" id="sidebarName">Student</div>
+        <div class="srole" id="sidebarBranch">Branch</div>
+      </div>
+      <span style="color:rgba(255,255,255,0.4);font-size:15px;cursor:pointer;margin-left:auto;" onclick="logout()">⏻</span>
+    </div>
+  </div>
+</aside>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div>
+    <div class="page-title" id="pageTitle">Dashboard</div>
+    <div class="page-sub"  id="pageSub">Your placement overview</div>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-btn" onclick="showSection('notifications')">
+      🔔 <span class="notif-dot" id="notifDot" style="display:none;"></span>
+    </div>
+    <div class="topbar-btn" onclick="logout()">⏻</div>
+  </div>
+</header>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<main class="main">
+
+  <!-- ══ DASHBOARD ══ -->
+  <div class="section active" id="sec-dashboard">
+    <div class="welcome-banner">
+      <div class="wb-text">
+        <h2>Hello, <span id="studentNameBanner">Student</span>! 👋</h2>
+        <p>Your placement journey starts here. Check out the latest drives.</p>
+      </div>
+      <div class="wb-emoji">🚀</div>
+    </div>
+
+    <!-- Profile completion -->
+    <div class="profile-complete-card" id="profileCompleteCard" style="display:none;">
+      <div class="pc-info">
+        <h3>Complete your profile to apply for jobs!</h3>
+        <p id="pcMissingText">Add your skills and upload your resume to get started.</p>
+        <div class="pc-progress"><div class="pc-progress-fill" id="pcBar" style="width:0%"></div></div>
+      </div>
+      <div class="pc-pct" id="pcPct">0%</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card" onclick="showSection('jobs')">
+        <div class="stat-icon" style="background:var(--primary-pale);">💼</div>
+        <div><div class="stat-value" id="ds-drives" style="color:var(--primary)">—</div><div class="stat-label">Active Drives</div></div>
+      </div>
+      <div class="stat-card" onclick="showSection('applications')">
+        <div class="stat-icon" style="background:#DBEAFE;">📋</div>
+        <div><div class="stat-value" id="ds-apps" style="color:var(--info)">—</div><div class="stat-label">Applications</div></div>
+      </div>
+      <div class="stat-card" onclick="showSection('interviews')">
+        <div class="stat-icon" style="background:#FEF3C7;">📅</div>
+        <div><div class="stat-value" id="ds-interviews" style="color:var(--warning)">—</div><div class="stat-label">Interviews</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#D1FAE5;" id="ds-status-icon">✅</div>
+        <div><div class="stat-value" id="ds-status" style="color:var(--success)">—</div><div class="stat-label">Placement Status</div></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 Recent Applications</span>
+          <button class="btn btn-sm btn-outline" onclick="showSection('applications')">View All</button>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div id="recentAppsTable">
+            <div class="loading-overlay"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🔔 Announcements</span>
+          <button class="btn btn-sm btn-outline" onclick="showSection('notifications')">View All</button>
+        </div>
+        <div id="dashNotifs" style="max-height:280px;overflow-y:auto;">
+          <div class="loading-overlay"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ JOB LISTINGS ══ -->
+  <div class="section" id="sec-jobs">
+    <div class="filter-bar">
+      <input class="form-input" id="jobSearch" placeholder="Search company or role..." oninput="loadJobs()" />
+      <select class="form-select" id="jobTypeFilter" onchange="loadJobs()">
+        <option value="">All Types</option>
+        <option value="full_time">Full Time</option>
+        <option value="internship">Internship</option>
+        <option value="contract">Contract</option>
+      </select>
+    </div>
+    <div id="jobsGrid" class="jobs-grid">
+      <div class="loading-overlay" style="grid-column:1/-1;"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- ══ APPLICATIONS ══ -->
+  <div class="section" id="sec-applications">
+    <div class="filter-bar">
+      <select class="form-select" id="appStatusFilter" onchange="loadApplications()">
+        <option value="">All Status</option>
+        <option value="applied">Applied</option>
+        <option value="shortlisted">Shortlisted</option>
+        <option value="interview">Interview Scheduled</option>
+        <option value="selected">Selected</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Company</th><th>Drive</th><th>Package</th><th>Applied</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="applicationsTable"><tr><td colspan="6"><div class="loading-overlay"><div class="spinner"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ INTERVIEWS ══ -->
+  <div class="section" id="sec-interviews">
+    <div class="card">
+      <div class="card-header"><span class="card-title">📅 Upcoming Interviews</span></div>
+      <div id="interviewsList">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ OFFERS ══ -->
+  <div class="section" id="sec-offers">
+    <div class="card">
+      <div class="card-header"><span class="card-title">📜 Offer Letters</span></div>
+      <div id="offersList">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ NOTIFICATIONS ══ -->
+  <div class="section" id="sec-notifications">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🔔 All Notifications</span>
+        <button class="btn btn-sm btn-outline" onclick="markAllRead()">Mark All Read</button>
+      </div>
+      <div id="allNotifsList">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PROFILE ══ -->
+  <div class="section" id="sec-profile">
+    <div class="grid-2" style="align-items:start;">
+      <!-- Left column: basic info -->
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">👤 Personal Details</span>
+            <button class="btn btn-primary btn-sm" onclick="saveProfile()">Save</button>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+              <div id="profileAvatar" style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,var(--primary),var(--primary-light));display:flex;align-items:center;justify-content:center;font-size:30px;color:white;font-weight:700;">S</div>
+              <div>
+                <div style="font-size:16px;font-weight:700;" id="profileName">Student</div>
+                <div style="font-size:12px;color:var(--light);" id="profileRoll">—</div>
+                <div id="profilePlacedBadge" style="margin-top:6px;"></div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" id="pName" /></div>
+              <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="pEmail" disabled /></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="pPhone" /></div>
+              <div class="form-group"><label class="form-label">Roll Number</label><input class="form-input" id="pRoll" disabled /></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Branch</label>
+                <select class="form-select" id="pBranch"><option>CSE</option><option>IT</option><option>ECE</option><option>MCA</option><option>MBA</option><option>ME</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">Year</label>
+                <select class="form-select" id="pYear"><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">CGPA *</label><input class="form-input" type="number" id="pCgpa" step="0.1" min="0" max="10" /></div>
+              <div class="form-group"><label class="form-label">Active Backlogs</label><input class="form-input" type="number" id="pBacklogs" min="0" value="0" /></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">📄 Resume</span></div>
+          <div class="card-body">
+            <div id="resumeStatus" style="padding:12px;background:var(--bg);border-radius:10px;font-size:13px;margin-bottom:14px;">No resume uploaded yet.</div>
+            <input type="file" id="resumeFile" accept=".pdf" style="display:none;" onchange="uploadResume(this)" />
+            <button class="btn btn-primary" onclick="document.getElementById('resumeFile').click()">📤 Upload Resume (PDF only)</button>
+            <div style="font-size:11px;color:var(--light);margin-top:8px;">Max 5MB. PDF format only.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: academic extras -->
+      <div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚡ Skills</span></div>
+          <div class="card-body">
+            <div class="tag-input-wrap" id="skillsWrap" onclick="document.getElementById('skillInput').focus()">
+              <input class="tag-input" id="skillInput" placeholder="Type a skill and press Enter..." onkeydown="addTag(event,'skills')" />
+            </div>
+            <div style="font-size:11px;color:var(--light);margin-top:6px;">Press Enter to add each skill.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">🚀 Projects</span></div>
+          <div class="card-body">
+            <div id="projectsList" style="margin-bottom:12px;"></div>
+            <button class="btn btn-outline btn-sm" onclick="openProjectModal()">+ Add Project</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">🏅 Certifications</span></div>
+          <div class="card-body">
+            <div id="certsList" style="margin-bottom:12px;"></div>
+            <button class="btn btn-outline btn-sm" onclick="openCertModal()">+ Add Certification</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">📝 About Me</span></div>
+          <div class="card-body">
+            <textarea class="form-textarea" id="pBio" placeholder="Write a brief bio about yourself..."></textarea>
+            <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="saveProfile()">Save Profile</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ QUERIES ══ -->
+  <div class="section" id="sec-queries">
+    <div class="grid-2" style="align-items:start;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">💬 Submit a Query</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="qCategory">
+              <option value="placement">Placement Process</option>
+              <option value="resume">Resume / Profile</option>
+              <option value="company">Company Related</option>
+              <option value="technical">Technical Issue</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Subject *</label><input class="form-input" id="qSubject" placeholder="Brief subject line" /></div>
+          <div class="form-group"><label class="form-label">Message *</label><textarea class="form-textarea" id="qMessage" placeholder="Describe your issue or question in detail..."></textarea></div>
+          <button class="btn btn-primary" style="width:100%;" onclick="submitQuery()">📤 Submit Query</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📬 My Queries</span></div>
+        <div id="queriesList"><div class="loading-overlay"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- JOB DETAIL MODAL -->
+<div class="modal-overlay" id="jobModal">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <span class="modal-title" id="jobModalTitle">Job Details</span>
+      <button class="modal-close" onclick="closeModal('jobModal')">✕</button>
+    </div>
+    <div class="modal-body" id="jobModalBody">
+      <div class="loading-overlay"><div class="spinner"></div></div>
+    </div>
+    <div class="modal-footer" id="jobModalFooter"></div>
+  </div>
+</div>
+
+<!-- APPLY CONFIRM MODAL -->
+<div class="modal-overlay" id="applyModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">Confirm Application</span>
+      <button class="modal-close" onclick="closeModal('applyModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;padding:10px 0;">
+        <div style="font-size:48px;margin-bottom:12px;">🚀</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:8px;" id="applyConfirmText">Apply for this drive?</div>
+        <div style="font-size:13px;color:var(--light);">Make sure your profile is complete and resume is uploaded before applying.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('applyModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmApply()">Yes, Apply! 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header"><span class="modal-title">Add Project</span><button class="modal-close" onclick="closeModal('projectModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="projName" /></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="projDesc" style="min-height:70px;"></textarea></div>
+      <div class="form-group"><label class="form-label">Tech Stack</label><input class="form-input" id="projTech" placeholder="e.g. React, Node.js, MongoDB" /></div>
+      <div class="form-group"><label class="form-label">Link (optional)</label><input class="form-input" id="projLink" placeholder="GitHub or live link" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('projectModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Add Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- CERT MODAL -->
+<div class="modal-overlay" id="certModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header"><span class="modal-title">Add Certification</span><button class="modal-close" onclick="closeModal('certModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Certification Name *</label><input class="form-input" id="certName" /></div>
+      <div class="form-group"><label class="form-label">Issuing Organization</label><input class="form-input" id="certOrg" /></div>
+      <div class="form-group"><label class="form-label">Year</label><input class="form-input" type="number" id="certYear" placeholder="2024" /></div>
+      <div class="form-group"><label class="form-label">Certificate Link</label><input class="form-input" id="certLink" placeholder="Credential URL" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('certModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCert()">Add Certification</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API   = '/api';
+let token   = localStorage.getItem('placemat_token');
+let user    = JSON.parse(localStorage.getItem('placemat_user') || '{}');
+let profile = {};
+let skills  = [];
+let projects= JSON.parse(localStorage.getItem('placemat_projects') || '[]');
+let certs   = JSON.parse(localStorage.getItem('placemat_certs') || '[]');
+let pendingApplyDriveId = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!token || !user || user.role !== 'student') { window.location.href = 'login.html'; return; }
+  document.getElementById('studentNameBanner').textContent = user.name || 'Student';
+  document.getElementById('sidebarName').textContent       = user.name || 'Student';
+  document.getElementById('sidebarAvatar').textContent     = (user.name || 'S')[0].toUpperCase();
+  loadDashboard();
+  renderProjects();
+  renderCerts();
+});
+
+function authH() { return { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` }; }
+function logout() { localStorage.removeItem('placemat_token'); localStorage.removeItem('placemat_user'); window.location.href = '../index.html'; }
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + name)?.classList.add('active');
+  const titles = { dashboard:['Dashboard','Your placement overview'], jobs:['Job Listings','Browse active drives'], applications:['My Applications','Track your applications'], interviews:['Interviews','Upcoming interviews'], offers:['Offers','Your offer letters'], notifications:['Notifications','Updates & announcements'], profile:['My Profile','Manage your profile'], queries:['Queries','Get support'] };
+  const [t,s] = titles[name] || [name,''];
+  document.getElementById('pageTitle').textContent = t;
+  document.getElementById('pageSub').textContent   = s;
+  if (name==='jobs')          loadJobs();
+  if (name==='applications')  loadApplications();
+  if (name==='interviews')    loadInterviews();
+  if (name==='offers')        loadOffers();
+  if (name==='notifications') loadNotifications();
+  if (name==='profile')       loadProfile();
+  if (name==='queries')       loadQueries();
+}
+
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type==='success'?'✅':'❌'}</span> ${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── DASHBOARD ────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [dashR, notifR, appR] = await Promise.all([
+      fetch(`${API}/student/dashboard`, { headers: authH() }),
+      fetch(`${API}/student/notifications`, { headers: authH() }),
+      fetch(`${API}/student/applications`, { headers: authH() })
+    ]);
+    const dash  = await dashR.json();
+    const notif = await notifR.json();
+    const apps  = await appR.json();
+
+    if (dash.success) {
+      const s = dash.data;
+      document.getElementById('ds-drives').textContent    = s.activeDrivers || s.totalDrives || 0;
+      document.getElementById('ds-apps').textContent      = s.totalApplications || 0;
+      document.getElementById('ds-interviews').textContent= s.upcomingInterviews || 0;
+      if (user.is_placed) {
+        document.getElementById('ds-status').textContent  = 'Placed 🎉';
+        document.getElementById('ds-status-icon').textContent = '🏆';
+      } else {
+        document.getElementById('ds-status').textContent  = 'Active';
+        document.getElementById('ds-status-icon').textContent = '🎯';
+        document.getElementById('ds-status').style.color  = 'var(--primary)';
+      }
+      checkProfileCompletion(s.profile);
+      document.getElementById('sidebarBranch').textContent = s.profile?.branch || user.branch || '';
+    }
+
+    if (notif.success) renderDashNotifs(notif.data.notifications);
+    if (apps.success)  renderRecentApps(apps.data.applications);
+  } catch(e) { console.error(e); }
+}
+
+function checkProfileCompletion(p) {
+  if (!p) return;
+  let score = 0; const total = 5;
+  if (p.name)        score++;
+  if (p.phone)       score++;
+  if (p.cgpa)        score++;
+  if (p.resume_path) score++;
+  if (p.skills && JSON.parse(p.skills||'[]').length > 0) score++;
+  const pct = Math.round((score/total)*100);
+  if (pct < 100) {
+    document.getElementById('profileCompleteCard').style.display = 'flex';
+    document.getElementById('pcBar').style.width = pct + '%';
+    document.getElementById('pcPct').textContent = pct + '%';
+    const missing = [];
+    if (!p.phone)       missing.push('phone number');
+    if (!p.resume_path) missing.push('resume');
+    if (!p.skills || !JSON.parse(p.skills||'[]').length) missing.push('skills');
+    document.getElementById('pcMissingText').textContent = missing.length ? `Missing: ${missing.join(', ')}` : 'Almost done!';
+  }
+}
+
+function renderDashNotifs(notifs) {
+  const c = document.getElementById('dashNotifs');
+  if (!notifs?.length) { c.innerHTML = '<div class="empty-state"><div class="ei">🔔</div><p>No announcements yet</p></div>'; return; }
+  c.innerHTML = notifs.slice(0,5).map(n => `
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;">
+      <div style="font-size:18px;flex-shrink:0;">📢</div>
+      <div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:2px;">${n.title}</div>
+        <div style="font-size:12px;color:var(--light);">${n.message}</div>
+        <div style="font-size:11px;color:var(--light);margin-top:4px;">${fmtDate(n.created_at)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderRecentApps(apps) {
+  const c = document.getElementById('recentAppsTable');
+  if (!apps?.length) { c.innerHTML = '<div class="empty-state"><div class="ei">📋</div><p>No applications yet. Browse jobs!</p></div>'; return; }
+  c.innerHTML = `<table><thead><tr><th>Company</th><th>Drive</th><th>Status</th></tr></thead><tbody>
+    ${apps.slice(0,5).map(a => `<tr>
+      <td><strong>${a.company_name}</strong></td>
+      <td>${a.drive_title}</td>
+      <td>${appBadge(a.status)}</td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+// ── JOBS ─────────────────────────────────────────────────────
+async function loadJobs() {
+  const search  = document.getElementById('jobSearch')?.value || '';
+  const jobType = document.getElementById('jobTypeFilter')?.value || '';
+  const grid = document.getElementById('jobsGrid');
+  grid.innerHTML = '<div class="loading-overlay" style="grid-column:1/-1;"><div class="spinner"></div></div>';
+  try {
+    const r = await fetch(`${API}/student/drives`, { headers: authH() });
+    const d = await r.json();
+    if (!d.success) { if (r.status===401) logout(); return; }
+    let drives = d.data.drives || [];
+    if (search)  drives = drives.filter(dr => dr.title.toLowerCase().includes(search.toLowerCase()) || dr.company_name.toLowerCase().includes(search.toLowerCase()));
+    if (jobType) drives = drives.filter(dr => dr.job_type === jobType);
+    if (!drives.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="ei">🔍</div><p>No active drives found.</p></div>'; return; }
+    grid.innerHTML = drives.map(dr => `
+      <div class="job-card" onclick="viewJob(${dr.id})">
+        <div class="job-card-header">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div class="job-logo">${dr.company_name[0]}</div>
+            <div>
+              <div class="job-title">${dr.title}</div>
+              <div class="job-company">🏢 ${dr.company_name}</div>
+            </div>
+          </div>
+          ${dr.eligible ? '<span class="badge badge-success">✓ Eligible</span>' : '<span class="badge badge-gray">Not Eligible</span>'}
+        </div>
+        <div class="job-tags">
+          <span class="job-tag">${dr.job_type?.replace('_',' ')}</span>
+          ${dr.location?`<span class="job-tag">📍 ${dr.location}</span>`:''}
+          <span class="job-tag">CGPA ${dr.min_cgpa}+</span>
+        </div>
+        <div style="font-size:12px;color:var(--light);margin-top:6px;">
+          ${dr.eligible_branches ? `🎓 ${JSON.parse(dr.eligible_branches||'[]').join(', ')||'All Branches'}` : '🎓 All Branches'}
+        </div>
+        <div class="job-footer">
+          <div class="job-package">${dr.package_min?`${dr.package_min}–${dr.package_max||'?'} LPA`:'Package TBD'}</div>
+          <div style="font-size:11px;color:var(--light);">Deadline: ${dr.application_deadline?fmtDate(dr.application_deadline):'Open'}</div>
+        </div>
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function viewJob(id) {
+  openModal('jobModal');
+  document.getElementById('jobModalBody').innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
+  try {
+    const r = await fetch(`${API}/student/drives`, { headers: authH() });
+    const d = await r.json();
+    const drive = d.data?.drives?.find(dr => dr.id === id);
+    if (!drive) { closeModal('jobModal'); return; }
+    document.getElementById('jobModalTitle').textContent = drive.title;
+    const branches = JSON.parse(drive.eligible_branches||'[]');
+    const skills   = JSON.parse(drive.skills_required||'[]');
+    document.getElementById('jobModalBody').innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+        <div class="job-logo" style="width:52px;height:52px;font-size:20px;">${drive.company_name[0]}</div>
+        <div>
+          <div style="font-size:17px;font-weight:700;">${drive.title}</div>
+          <div style="font-size:13px;color:var(--light);">🏢 ${drive.company_name}</div>
+        </div>
+        <div style="margin-left:auto;">${drive.eligible?'<span class="badge badge-success">✓ Eligible</span>':'<span class="badge badge-gray">Not Eligible</span>'}</div>
+      </div>
+      ${drive.description?`<p style="font-size:13px;color:var(--mid);margin-bottom:16px;">${drive.description}</p>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:16px;">
+        <div>💰 <strong>Package:</strong> ${drive.package_min?`${drive.package_min}–${drive.package_max||'?'} LPA`:'TBD'}</div>
+        <div>💼 <strong>Type:</strong> ${drive.job_type?.replace('_',' ')}</div>
+        <div>📍 <strong>Location:</strong> ${drive.location||'Not specified'}</div>
+        <div>🎯 <strong>Min CGPA:</strong> ${drive.min_cgpa}</div>
+        <div>📅 <strong>Deadline:</strong> ${drive.application_deadline?fmtDate(drive.application_deadline):'Open'}</div>
+        <div>🎓 <strong>Branches:</strong> ${branches.length?branches.join(', '):'All'}</div>
+      </div>
+      ${skills.length?`<div style="margin-bottom:12px;"><strong style="font-size:13px;">Required Skills:</strong><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${skills.map(s=>`<span class="badge badge-purple">${s}</span>`).join('')}</div></div>`:''}
+    `;
+    document.getElementById('jobModalFooter').innerHTML = drive.eligible && drive.status==='active'
+      ? `<button class="btn btn-outline" onclick="closeModal('jobModal')">Close</button><button class="btn btn-primary" onclick="askApply(${drive.id},'${drive.title.replace(/'/g,"\\'")}')">🚀 Apply Now</button>`
+      : `<button class="btn btn-outline" onclick="closeModal('jobModal')">Close</button><button class="btn btn-sm btn-primary" disabled style="opacity:0.5;">Not Eligible</button>`;
+  } catch(e) { console.error(e); }
+}
+
+function askApply(id, title) {
+  pendingApplyDriveId = id;
+  document.getElementById('applyConfirmText').textContent = `Apply for "${title}"?`;
+  closeModal('jobModal');
+  openModal('applyModal');
+}
+
+async function confirmApply() {
+  if (!pendingApplyDriveId) return;
+  try {
+    const r = await fetch(`${API}/student/apply`, { method:'POST', headers: authH(), body: JSON.stringify({ drive_id: pendingApplyDriveId }) });
+    const d = await r.json();
+    closeModal('applyModal');
+    if (d.success) { toast('Application submitted! 🎉', 'success'); loadDashboard(); }
+    else toast(d.message, 'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+// ── APPLICATIONS ─────────────────────────────────────────────
+async function loadApplications() {
+  const status = document.getElementById('appStatusFilter')?.value || '';
+  const tb = document.getElementById('applicationsTable');
+  tb.innerHTML = '<tr><td colspan="6"><div class="loading-overlay"><div class="spinner"></div></div></td></tr>';
+  try {
+    const r = await fetch(`${API}/student/applications`, { headers: authH() });
+    const d = await r.json();
+    if (!d.success) return;
+    let apps = d.data.applications;
+    if (status) apps = apps.filter(a => a.status === status);
+    if (!apps.length) { tb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="ei">📋</div><p>No applications found.</p></div></td></tr>'; return; }
+    tb.innerHTML = apps.map(a => `
+      <tr>
+        <td><strong>${a.company_name}</strong></td>
+        <td>${a.drive_title}</td>
+        <td>${a.package_min?`${a.package_min} LPA`:'—'}</td>
+        <td>${fmtDate(a.applied_at)}</td>
+        <td>
+          <div>${appBadge(a.status)}</div>
+          ${a.interview_date?`<div style="font-size:11px;color:var(--light);margin-top:3px;">📅 ${fmtDate(a.interview_date)}</div>`:''}
+        </td>
+        <td>
+          ${a.status==='selected' && a.offer_letter_path?`<a href="/api/files/offer/${a.offer_letter_path.split('/').pop()}" target="_blank" class="btn btn-sm btn-success">📥 Offer Letter</a>`:''}
+        </td>
+      </tr>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ── INTERVIEWS ────────────────────────────────────────────────
+async function loadInterviews() {
+  const c = document.getElementById('interviewsList');
+  try {
+    const r = await fetch(`${API}/student/interviews`, { headers: authH() });
+    const d = await r.json();
+    if (!d.success) return;
+    const interviews = d.data.interviews;
+    if (!interviews.length) { c.innerHTML = '<div class="empty-state"><div class="ei">📅</div><p>No interviews scheduled yet.</p></div>'; return; }
+    c.innerHTML = interviews.map(i => `
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;">
+          <div>
+            <div style="font-weight:700;font-size:14px;">${i.company_name}</div>
+            <div style="font-size:12px;color:var(--light);">${i.drive_title}</div>
+          </div>
+          <span class="badge badge-purple">Round ${i.round_number}</span>
+        </div>
+        <div class="status-track">
+          ${['Applied','Shortlisted','Interview','Selected'].map((step,idx) => {
+            const statuses = ['applied','shortlisted','interview','selected'];
+            const cur = statuses.indexOf(i.application_status);
+            const done = idx < cur; const current = idx === cur;
+            return `<div class="status-step">
+              <div class="status-dot ${done?'done':current?'current':''}">${done?'✓':idx+1}</div>
+              <div class="status-label">${step}</div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-top:10px;">
+          <div>📅 <strong>Date:</strong> ${i.scheduled_at?fmtDateTime(i.scheduled_at):'TBD'}</div>
+          <div>💻 <strong>Mode:</strong> ${i.mode||'—'}</div>
+          <div style="grid-column:1/-1;">📍 <strong>${i.mode==='online'?'Link':'Venue'}:</strong> ${i.venue||i.meeting_link||'—'}</div>
+        </div>
+        <div style="margin-top:10px;font-weight:600;font-size:13px;">${i.round_name||`Round ${i.round_number} Interview`}</div>
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ── OFFERS ────────────────────────────────────────────────────
+async function loadOffers() {
+  const c = document.getElementById('offersList');
+  try {
+    const r = await fetch(`${API}/student/offer`, { headers: authH() });
+    const d = await r.json();
+    if (!d.success || !d.data.offer) { c.innerHTML = '<div class="empty-state"><div class="ei">📜</div><p>No offer letter yet. Keep going!</p></div>'; return; }
+    const offer = d.data.offer;
+    c.innerHTML = `
+      <div style="padding:24px;">
+        <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));border-radius:14px;padding:24px;color:white;margin-bottom:16px;">
+          <div style="font-size:36px;margin-bottom:10px;">🎉</div>
+          <div style="font-size:20px;font-weight:700;margin-bottom:4px;">Congratulations!</div>
+          <div style="font-size:14px;opacity:0.85;">You have received an offer from <strong>${offer.company_name}</strong></div>
+          <div style="font-size:28px;font-weight:800;margin-top:12px;">${offer.package} LPA</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;margin-bottom:16px;">
+          <div>🏢 <strong>Company:</strong> ${offer.company_name}</div>
+          <div>📅 <strong>Date:</strong> ${fmtDate(offer.issued_at)}</div>
+          <div>💰 <strong>Package:</strong> ${offer.package} LPA</div>
+          <div>📋 <strong>Status:</strong> ${offer.status==='accepted'?'<span class="badge badge-success">Accepted</span>':offer.status==='rejected'?'<span class="badge badge-danger">Declined</span>':'<span class="badge badge-warning">Pending</span>'}</div>
+        </div>
+        ${offer.offer_letter_path?`<button class="btn btn-primary" onclick="window.open('/api/files/offer/${offer.offer_letter_path.split('/').pop()}','_blank')">📥 Download Offer Letter</button>`:''}
+        ${offer.status==='pending'?`
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="btn btn-success" onclick="respondOffer('accepted')">✓ Accept Offer</button>
+            <button class="btn" style="background:#FEE2E2;color:#991B1B;" onclick="respondOffer('rejected')">✗ Decline Offer</button>
+          </div>`:''
+        }
+      </div>`;
+  } catch(e) { console.error(e); }
+}
+
+async function respondOffer(decision) {
+  if (!confirm(`Are you sure you want to ${decision} this offer?`)) return;
+  try {
+    const r = await fetch(`${API}/student/offer/respond`, { method:'POST', headers: authH(), body: JSON.stringify({ response: decision }) });
+    const d = await r.json();
+    if (d.success) { toast(decision==='accepted'?'Offer accepted! 🎉 You are now placed!':'Offer declined.'); loadOffers(); if (decision==='accepted') { user.is_placed = 1; localStorage.setItem('placemat_user', JSON.stringify(user)); } }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────
+async function loadNotifications() {
+  const c = document.getElementById('allNotifsList');
+  try {
+    const r = await fetch(`${API}/student/notifications`, { headers: authH() });
+    const d = await r.json();
+    if (!d.success) return;
+    const notifs = d.data.notifications;
+    if (!notifs.length) { c.innerHTML = '<div class="empty-state"><div class="ei">🔔</div><p>No notifications yet.</p></div>'; return; }
+    c.innerHTML = notifs.map(n => `
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;${n.is_read?'':'background:#FAFAFF;'}">
+        <div style="font-size:22px;flex-shrink:0;">📢</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:13px;margin-bottom:3px;">${n.title}${!n.is_read?'<span class="badge badge-purple" style="margin-left:8px;font-size:10px;">New</span>':''}</div>
+          <div style="font-size:12px;color:var(--light);">${n.message}</div>
+          <div style="font-size:11px;color:var(--light);margin-top:5px;">${fmtDate(n.created_at)}</div>
+        </div>
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+function markAllRead() { toast('All notifications marked as read.'); loadNotifications(); }
+
+// ── PROFILE ───────────────────────────────────────────────────
+async function loadProfile() {
+  try {
+    const r = await fetch(`${API}/student/profile`, { headers: authH() });
+    const d = await r.json();
+    if (!d.success) return;
+    profile = d.data.student;
+    document.getElementById('pName').value    = profile.name || '';
+    document.getElementById('pEmail').value   = profile.email || '';
+    document.getElementById('pPhone').value   = profile.phone || '';
+    document.getElementById('pRoll').value    = profile.roll_number || '';
+    document.getElementById('pCgpa').value    = profile.cgpa || '';
+    document.getElementById('pBacklogs').value= profile.active_backlogs || 0;
+    document.getElementById('pBio').value     = profile.bio || '';
+    document.getElementById('profileName').textContent = profile.name;
+    document.getElementById('profileRoll').textContent = profile.roll_number;
+    document.getElementById('profileAvatar').textContent = profile.name[0]?.toUpperCase();
+    if (profile.branch) document.getElementById('pBranch').value = profile.branch;
+    if (profile.year)   document.getElementById('pYear').value   = profile.year;
+    if (profile.is_placed) {
+      document.getElementById('profilePlacedBadge').innerHTML = '<span class="badge badge-success">✓ Placed</span>';
+    }
+    if (profile.resume_path) {
+      document.getElementById('resumeStatus').innerHTML = `✅ Resume uploaded — <a href="/api/files/resume/${profile.resume_path.split('/').pop()}" target="_blank" style="color:var(--primary);font-weight:600;">View Resume</a>`;
+    }
+    const savedSkills = JSON.parse(profile.skills || '[]');
+    skills = savedSkills;
+    renderSkillTags();
+  } catch(e) { console.error(e); }
+}
+
+async function saveProfile() {
+  try {
+    const r = await fetch(`${API}/student/profile`, { method:'PUT', headers: authH(), body: JSON.stringify({
+      name:            document.getElementById('pName').value,
+      phone:           document.getElementById('pPhone').value,
+      branch:          document.getElementById('pBranch').value,
+      year:            parseInt(document.getElementById('pYear').value),
+      cgpa:            parseFloat(document.getElementById('pCgpa').value),
+      active_backlogs: parseInt(document.getElementById('pBacklogs').value)||0,
+      skills:          skills,
+      bio:             document.getElementById('pBio').value,
+      projects:        projects,
+      certifications:  certs
+    })});
+    const d = await r.json();
+    if (d.success) toast('Profile saved! ✓');
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+async function uploadResume(input) {
+  const file = input.files[0]; if (!file) return;
+  if (file.type !== 'application/pdf') { toast('Only PDF files allowed.','error'); return; }
+  const fd = new FormData(); fd.append('resume', file);
+  try {
+    const r = await fetch(`${API}/student/profile/resume`, { method:'POST', headers: { 'Authorization':`Bearer ${token}` }, body: fd });
+    const d = await r.json();
+    if (d.success) { toast('Resume uploaded! ✓'); loadProfile(); }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+// SKILLS TAGS
+function renderSkillTags() {
+  const wrap = document.getElementById('skillsWrap');
+  wrap.innerHTML = '';
+  skills.forEach((s,i) => {
+    const chip = document.createElement('div');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `${s}<button onclick="removeSkill(${i})">×</button>`;
+    wrap.appendChild(chip);
+  });
+  const input = document.createElement('input');
+  input.className = 'tag-input'; input.id = 'skillInput';
+  input.placeholder = 'Type a skill and press Enter...';
+  input.addEventListener('keydown', (e) => addTag(e,'skills'));
+  wrap.appendChild(input);
+}
+
+function addTag(e, type) {
+  if (e.key !== 'Enter' && e.key !== ',') return;
+  e.preventDefault();
+  const val = e.target.value.trim();
+  if (!val) return;
+  if (type==='skills' && !skills.includes(val)) { skills.push(val); renderSkillTags(); }
+}
+
+function removeSkill(i) { skills.splice(i,1); renderSkillTags(); }
+
+// PROJECTS
+function openProjectModal() { ['projName','projDesc','projTech','projLink'].forEach(id => document.getElementById(id).value=''); openModal('projectModal'); }
+function saveProject() {
+  const name = document.getElementById('projName').value;
+  if (!name) { toast('Project name required.','error'); return; }
+  projects.push({ name, description: document.getElementById('projDesc').value, tech: document.getElementById('projTech').value, link: document.getElementById('projLink').value });
+  localStorage.setItem('placemat_projects', JSON.stringify(projects));
+  renderProjects(); closeModal('projectModal'); toast('Project added!');
+}
+function renderProjects() {
+  const c = document.getElementById('projectsList');
+  if (!c) return;
+  if (!projects.length) { c.innerHTML = '<div style="font-size:13px;color:var(--light);">No projects added yet.</div>'; return; }
+  c.innerHTML = projects.map((p,i) => `
+    <div style="padding:10px 12px;background:var(--bg);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;">
+        <div style="font-weight:600;font-size:13px;">${p.name}</div>
+        <button class="btn-icon" onclick="removeProject(${i})" style="font-size:13px;">🗑</button>
+      </div>
+      ${p.description?`<div style="font-size:12px;color:var(--light);margin-top:3px;">${p.description}</div>`:''}
+      ${p.tech?`<div style="font-size:11px;margin-top:5px;"><span class="badge badge-info">${p.tech}</span></div>`:''}
+    </div>`).join('');
+}
+function removeProject(i) { projects.splice(i,1); localStorage.setItem('placemat_projects',JSON.stringify(projects)); renderProjects(); }
+
+// CERTS
+function openCertModal() { ['certName','certOrg','certYear','certLink'].forEach(id => document.getElementById(id).value=''); openModal('certModal'); }
+function saveCert() {
+  const name = document.getElementById('certName').value;
+  if (!name) { toast('Certification name required.','error'); return; }
+  certs.push({ name, org: document.getElementById('certOrg').value, year: document.getElementById('certYear').value, link: document.getElementById('certLink').value });
+  localStorage.setItem('placemat_certs', JSON.stringify(certs));
+  renderCerts(); closeModal('certModal'); toast('Certification added!');
+}
+function renderCerts() {
+  const c = document.getElementById('certsList');
+  if (!c) return;
+  if (!certs.length) { c.innerHTML = '<div style="font-size:13px;color:var(--light);">No certifications added yet.</div>'; return; }
+  c.innerHTML = certs.map((cert,i) => `
+    <div style="padding:10px 12px;background:var(--bg);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;">
+        <div>
+          <div style="font-weight:600;font-size:13px;">${cert.name}</div>
+          ${cert.org?`<div style="font-size:11px;color:var(--light);">${cert.org}${cert.year?' • '+cert.year:''}</div>`:''}
+        </div>
+        <button class="btn-icon" onclick="removeCert(${i})" style="font-size:13px;">🗑</button>
+      </div>
+      ${cert.link?`<a href="${cert.link}" target="_blank" style="font-size:11px;color:var(--primary);">🔗 View Certificate</a>`:''}
+    </div>`).join('');
+}
+function removeCert(i) { certs.splice(i,1); localStorage.setItem('placemat_certs',JSON.stringify(certs)); renderCerts(); }
+
+// QUERIES
+async function submitQuery() {
+  const subject  = document.getElementById('qSubject').value;
+  const message  = document.getElementById('qMessage').value;
+  const category = document.getElementById('qCategory').value;
+  if (!subject||!message) { toast('Subject and message required.','error'); return; }
+  try {
+    const r = await fetch(`${API}/student/queries`, { method:'POST', headers: authH(), body: JSON.stringify({ subject, message, category }) });
+    const d = await r.json();
+    if (d.success) { toast('Query submitted! Admin will respond soon.'); document.getElementById('qSubject').value=''; document.getElementById('qMessage').value=''; loadQueries(); }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+async function loadQueries() {
+  const c = document.getElementById('queriesList');
+  try {
+    const r = await fetch(`${API}/student/queries`, { headers: authH() });
+    const d = await r.json();
+    if (!d.success) return;
+    if (!d.data.queries.length) { c.innerHTML = '<div class="empty-state"><div class="ei">💬</div><p>No queries yet.</p></div>'; return; }
+    c.innerHTML = d.data.queries.map(q => `
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
+          <strong style="font-size:13px;">${q.subject}</strong>
+          ${q.status==='open'?'<span class="badge badge-warning">Open</span>':'<span class="badge badge-success">Resolved</span>'}
+        </div>
+        <div style="font-size:12px;color:var(--light);margin-bottom:6px;">${q.message}</div>
+        ${q.reply?`<div style="font-size:12px;background:#D1FAE5;padding:8px 10px;border-radius:8px;color:#065F46;"><strong>Admin:</strong> ${q.reply}</div>`:'<div style="font-size:11px;color:var(--light);">Awaiting admin response...</div>'}
+        <div style="font-size:11px;color:var(--light);margin-top:6px;">${fmtDate(q.created_at)}</div>
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+// HELPERS
+function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
+function fmtDateTime(d) { if (!d) return '—'; return new Date(d).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function appBadge(s) {
+  const m = { applied:'badge-info', shortlisted:'badge-purple', interview:'badge-warning', selected:'badge-success', rejected:'badge-danger', withdrawn:'badge-gray' };
+  const labels = { applied:'Applied', shortlisted:'Shortlisted ⭐', interview:'Interview 📅', selected:'Selected 🎉', rejected:'Rejected', withdrawn:'Withdrawn' };
+  return `<span class="badge ${m[s]||'badge-gray'}">${labels[s]||s}</span>`;
+}
+</script>
+</body>
+</html>

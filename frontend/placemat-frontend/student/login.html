@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Login – Placemat</title>
+  <link rel="stylesheet" href="../common/css/auth.css" />
+  <style>
+    /* Student colour accent override */
+    :root { --accent: #6C5FBC; }
+    .auth-side-panel { background: linear-gradient(155deg, #6C5FBC 0%, #9B8FE2 100%); }
+    .auth-role-badge { background: #f0eeff; color: #6C5FBC; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="auth-navbar">
+    <div class="auth-nav-inner">
+      <a href="../index.html" class="auth-logo">
+        <!--
+          INSERT LOGO:
+          <img src="../common/images/placemat-logo.png" alt="Placemat" />
+        -->
+        <span style="font-size:26px;">🎓</span>
+        <span class="auth-logo-text">PLACEMATE</span>
+      </a>
+      <a href="../index.html" class="auth-back-link">← Back to Home</a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="auth-main">
+    <div class="auth-card wide">
+
+      <!-- LEFT PANEL -->
+      <div class="auth-side-panel">
+        <div class="side-panel-icon">🎓</div>
+        <h2 class="side-panel-title">Student Portal</h2>
+        <p class="side-panel-desc">
+          Access your placement dashboard, browse active drives, track your applications and manage your career journey.
+        </p>
+        <div class="side-panel-features">
+          <div class="feature-item"><span class="feature-dot"></span> Browse job drives & internships</div>
+          <div class="feature-item"><span class="feature-dot"></span> Track application statuses</div>
+          <div class="feature-item"><span class="feature-dot"></span> Schedule interview slots</div>
+          <div class="feature-item"><span class="feature-dot"></span> Download offer letters</div>
+          <div class="feature-item"><span class="feature-dot"></span> AI-powered career guidance</div>
+        </div>
+      </div>
+
+      <!-- RIGHT FORM SECTION -->
+      <div class="auth-form-section">
+
+        <div class="auth-role-badge">🎓 Student Login</div>
+        <h1 class="auth-title">Welcome back!</h1>
+        <p class="auth-subtitle">
+          Don't have an account?
+          <a href="register.html">Register here</a>
+        </p>
+
+        <!-- Alert Box -->
+        <div class="auth-alert" id="authAlert"></div>
+
+        <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)" novalidate>
+
+          <!-- Email -->
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <div class="form-input-wrap">
+              <input
+                type="email"
+                id="email"
+                class="form-input"
+                placeholder="you@example.com"
+                autocomplete="email"
+                required
+              />
+            </div>
+            <span class="form-error" id="emailError"></span>
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <div class="form-input-wrap">
+              <input
+                type="password"
+                id="password"
+                class="form-input has-icon"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                required
+              />
+              <span class="input-icon-right" onclick="togglePassword('password', this)">👁️</span>
+            </div>
+            <span class="form-error" id="passwordError"></span>
+          </div>
+
+          <!-- Forgot password link -->
+          <div style="text-align:right; margin-top:-8px;">
+            <a href="#" style="font-size:13px; color:#6C5FBC; font-weight:500; text-decoration:none;">Forgot password?</a>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn-auth-submit" id="submitBtn">
+            <div class="btn-spinner"></div>
+            <span class="btn-text">Sign In →</span>
+          </button>
+
+        </form>
+
+        <div style="margin-top:28px; text-align:center; font-size:13px; color:#9CA3AF;">
+          ← <a href="../index.html" style="color:#6C5FBC; font-weight:500; text-decoration:none;">Return to homepage</a>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="auth-footer">
+    Made with ❤️ by SCSIT DAVV | Campus Placement Cell 2025–26
+  </footer>
+
+  <script src="../common/js/auth.js"></script>
+  <script>
+    // Redirect if already logged in as student
+    redirectIfLoggedIn();
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      clearAllErrors();
+      hideAlert();
+
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      // Client-side validation
+      let valid = true;
+      if (!email || !validateEmail(email)) {
+        showFieldError('email', 'Please enter a valid email address.');
+        valid = false;
+      }
+      if (!password || password.length < 6) {
+        showFieldError('password', 'Password must be at least 6 characters.');
+        valid = false;
+      }
+      if (!valid) return;
+
+      setButtonLoading('submitBtn', true);
+
+      try {
+        const data = await apiPost('/student/auth/login', { email, password });
+
+        if (data.success) {
+          saveAuth(data.token, data.user);
+          showAlert('success', 'Login successful! Redirecting to dashboard...');
+          setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+        } else {
+          showAlert('error', data.message || 'Invalid email or password.');
+          setButtonLoading('submitBtn', false);
+        }
+      } catch (err) {
+        showAlert('error', 'Server error. Please try again later.');
+        setButtonLoading('submitBtn', false);
+      }
+    }
+  </script>
+</body>
+</html>

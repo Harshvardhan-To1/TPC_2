@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard – Placemat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #1E40AF;
+      --primary-light: #3B82F6;
+      --primary-pale: #EFF6FF;
+      --accent: #6C5FBC;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --dark: #0F172A;
+      --mid: #334155;
+      --light: #64748B;
+      --border: #E2E8F0;
+      --bg: #F1F5F9;
+      --white: #ffffff;
+      --sidebar-w: 260px;
+      --topbar-h: 70px;
+      --font: 'Poppins', sans-serif;
+      --font2: 'Space Grotesk', sans-serif;
+      --radius: 16px;
+      --shadow: 0 4px 24px rgba(30,64,175,0.08);
+      --shadow-lg: 0 8px 40px rgba(30,64,175,0.14);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font); background: var(--bg); color: var(--dark); overflow-x: hidden; }
+
+    /* ── SIDEBAR ─────────────────────────────────────── */
+    .sidebar {
+      position: fixed; top: 0; left: 0;
+      width: var(--sidebar-w); height: 100vh;
+      background: var(--dark);
+      display: flex; flex-direction: column;
+      z-index: 100; transition: transform 0.3s ease;
+      overflow-y: auto;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sidebar-logo-icon {
+      width: 42px; height: 42px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .sidebar-logo-text { color: white; font-weight: 700; font-size: 16px; line-height: 1.2; }
+    .sidebar-logo-sub { color: rgba(255,255,255,0.4); font-size: 11px; font-weight: 400; }
+
+    .sidebar-section { padding: 16px 12px 8px; }
+    .sidebar-section-label {
+      color: rgba(255,255,255,0.3); font-size: 10px;
+      font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+      padding: 0 8px; margin-bottom: 6px;
+    }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 12px; border-radius: 10px;
+      color: rgba(255,255,255,0.6); font-size: 14px;
+      font-weight: 500; cursor: pointer;
+      transition: all 0.2s; text-decoration: none;
+      margin-bottom: 2px; position: relative;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white; box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+    }
+    .nav-item .nav-icon { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto; background: var(--danger);
+      color: white; font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 20px; min-width: 20px; text-align: center;
+    }
+
+    .sidebar-footer {
+      margin-top: auto; padding: 16px 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .admin-profile-mini {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px;
+      background: rgba(255,255,255,0.06); cursor: pointer;
+    }
+    .admin-avatar {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #6C5FBC, #3B82F6);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 14px; flex-shrink: 0;
+    }
+    .admin-info { flex: 1; overflow: hidden; }
+    .admin-name { color: white; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role { color: rgba(255,255,255,0.4); font-size: 11px; }
+
+    /* ── TOPBAR ──────────────────────────────────────── */
+    .topbar {
+      position: fixed; top: 0; left: var(--sidebar-w);
+      right: 0; height: var(--topbar-h);
+      background: white; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px; z-index: 99; gap: 16px;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 16px; }
+    .page-title { font-size: 20px; font-weight: 700; color: var(--dark); font-family: var(--font2); }
+    .page-subtitle { font-size: 13px; color: var(--light); }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 14px; min-width: 220px;
+    }
+    .search-box input {
+      border: none; background: none; outline: none;
+      font-family: var(--font); font-size: 13px; color: var(--dark);
+      width: 100%;
+    }
+    .search-box input::placeholder { color: var(--light); }
+
+    .topbar-btn {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--bg); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; position: relative;
+      transition: all 0.2s;
+    }
+    .topbar-btn:hover { background: var(--primary-pale); border-color: var(--primary-light); }
+    .topbar-btn .badge {
+      position: absolute; top: -4px; right: -4px;
+      background: var(--danger); color: white;
+      font-size: 9px; font-weight: 700; width: 16px; height: 16px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── MAIN CONTENT ────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      margin-top: var(--topbar-h);
+      padding: 28px;
+      min-height: calc(100vh - var(--topbar-h));
+    }
+
+    /* ── SECTIONS (show/hide) ─────────────────────────── */
+    .section { display: none; animation: fadeIn 0.3s ease; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── STAT CARDS ──────────────────────────────────── */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px; margin-bottom: 28px;
+    }
+    .stat-card {
+      background: white; border-radius: var(--radius);
+      padding: 22px; box-shadow: var(--shadow);
+      display: flex; align-items: center; gap: 16px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid var(--border);
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    .stat-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .stat-info { flex: 1; }
+    .stat-value { font-size: 28px; font-weight: 800; font-family: var(--font2); line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-size: 12px; color: var(--light); font-weight: 500; }
+    .stat-change { font-size: 11px; font-weight: 600; margin-top: 4px; }
+    .stat-change.up { color: var(--success); }
+    .stat-change.down { color: var(--danger); }
+
+    /* ── CARDS ───────────────────────────────────────── */
+    .card {
+      background: white; border-radius: var(--radius);
+      box-shadow: var(--shadow); border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 18px 22px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-title { font-size: 15px; font-weight: 700; color: var(--dark); font-family: var(--font2); }
+    .card-body { padding: 22px; }
+
+    /* ── GRID LAYOUTS ────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+    /* ── TABLE ───────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: var(--bg); }
+    th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--light); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+    td { padding: 13px 14px; border-bottom: 1px solid var(--border); color: var(--mid); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+
+    /* ── BADGES ──────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; white-space: nowrap;
+    }
+    .badge-success { background: #D1FAE5; color: #065F46; }
+    .badge-warning { background: #FEF3C7; color: #92400E; }
+    .badge-danger  { background: #FEE2E2; color: #991B1B; }
+    .badge-info    { background: #DBEAFE; color: #1E40AF; }
+    .badge-purple  { background: #EDE9FE; color: #6C5FBC; }
+    .badge-gray    { background: #F1F5F9; color: #64748B; }
+
+    /* ── BUTTONS ─────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: 10px; border: none;
+      font-family: var(--font); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; text-decoration: none;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: #1D3BA6; box-shadow: 0 4px 14px rgba(30,64,175,0.35); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-danger  { background: var(--danger); color: white; }
+    .btn-danger:hover  { background: #DC2626; }
+    .btn-outline {
+      background: transparent; color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+    .btn-outline:hover { background: var(--primary-pale); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+    .btn-icon { padding: 8px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--mid); cursor: pointer; font-size: 15px; transition: all 0.2s; }
+    .btn-icon:hover { background: var(--primary-pale); color: var(--primary); border-color: var(--primary-light); }
+
+    /* ── FORM ELEMENTS ───────────────────────────────── */
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--mid); margin-bottom: 6px; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; padding: 10px 14px; border-radius: 10px;
+      border: 1.5px solid var(--border); font-family: var(--font);
+      font-size: 13px; color: var(--dark); background: white;
+      transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+    .form-textarea { resize: vertical; min-height: 90px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ── FILTER BAR ──────────────────────────────────── */
+    .filter-bar {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap; margin-bottom: 18px;
+    }
+    .filter-bar .form-input, .filter-bar .form-select {
+      width: auto; flex: 1; min-width: 140px; max-width: 200px;
+    }
+
+    /* ── MODAL ───────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+      backdrop-filter: blur(4px); z-index: 500;
+      display: none; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: white; border-radius: 20px; width: 90%; max-width: 560px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      animation: modalIn 0.25s ease;
+    }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+    .modal-header {
+      padding: 22px 24px 18px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; color: var(--dark); }
+    .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--light); padding: 4px; border-radius: 6px; }
+    .modal-close:hover { background: var(--bg); color: var(--dark); }
+    .modal-body { padding: 22px 24px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ── CHARTS ──────────────────────────────────────── */
+    .chart-container { position: relative; height: 260px; }
+
+    /* ── EMPTY STATE ─────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 48px 24px; color: var(--light);
+    }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── NOTIFICATION TOAST ──────────────────────────── */
+    .toast-container { position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      background: white; border-radius: 12px; padding: 14px 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15); border-left: 4px solid var(--primary);
+      font-size: 13px; font-weight: 500; min-width: 280px; max-width: 380px;
+      animation: toastIn 0.3s ease; display: flex; align-items: center; gap: 10px;
+    }
+    .toast.success { border-color: var(--success); }
+    .toast.error   { border-color: var(--danger); }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+
+    /* ── AVATAR ──────────────────────────────────────── */
+    .avatar {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      display: inline-flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 13px; flex-shrink: 0;
+    }
+
+    /* ── PROGRESS BAR ─────────────────────────────────── */
+    .progress-bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 99px; transition: width 0.6s ease; }
+
+    /* ── TABS ────────────────────────────────────────── */
+    .tabs { display: flex; gap: 4px; background: var(--bg); padding: 4px; border-radius: 12px; margin-bottom: 20px; }
+    .tab { flex: 1; padding: 9px; border: none; background: none; border-radius: 9px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; color: var(--light); transition: all 0.2s; text-align: center; }
+    .tab.active { background: white; color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    /* ── LOADING SPINNER ─────────────────────────────── */
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-overlay { display: flex; align-items: center; justify-content: center; padding: 40px; }
+
+    /* ── RESPONSIVE ──────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      :root { --sidebar-w: 0px; }
+      .sidebar { transform: translateX(-260px); }
+      .sidebar.open { transform: translateX(0); --sidebar-w: 260px; }
+      .topbar, .main { left: 0; margin-left: 0; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── WELCOME BANNER ──────────────────────────────── */
+    .welcome-banner {
+      background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 50%, #3B82F6 100%);
+      border-radius: var(--radius); padding: 28px 32px; margin-bottom: 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      overflow: hidden; position: relative;
+    }
+    .welcome-banner::before {
+      content: ''; position: absolute; top: -40px; right: -40px;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+    }
+    .welcome-banner::after {
+      content: ''; position: absolute; bottom: -60px; right: 80px;
+      width: 160px; height: 160px; border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+    .welcome-text h2 { color: white; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .welcome-text p  { color: rgba(255,255,255,0.75); font-size: 14px; }
+    .welcome-emoji   { font-size: 64px; position: relative; z-index: 1; }
+  </style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ────────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">🎓</div>
+    <div>
+      <div class="sidebar-logo-text">PLACEMATE</div>
+      <div class="sidebar-logo-sub">Admin Panel</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Main</div>
+    <a class="nav-item active" onclick="showSection('dashboard')">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
+    <a class="nav-item" onclick="showSection('analytics')">
+      <span class="nav-icon">📈</span> Analytics
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Management</div>
+    <a class="nav-item" onclick="showSection('companies')">
+      <span class="nav-icon">🏢</span> Companies
+      <span class="nav-badge" id="pendingBadge">0</span>
+    </a>
+    <a class="nav-item" onclick="showSection('students')">
+      <span class="nav-icon">🎓</span> Students
+    </a>
+    <a class="nav-item" onclick="showSection('drives')">
+      <span class="nav-icon">💼</span> Job Drives
+    </a>
+    <a class="nav-item" onclick="showSection('applications')">
+      <span class="nav-icon">📋</span> Applications
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Tools</div>
+    <a class="nav-item" onclick="showSection('notifications')">
+      <span class="nav-icon">🔔</span> Notifications
+    </a>
+    <a class="nav-item" onclick="showSection('interviews')">
+      <span class="nav-icon">📅</span> Interviews
+    </a>
+    <a class="nav-item" onclick="showSection('queries')">
+      <span class="nav-icon">💬</span> Queries
+    </a>
+    <a class="nav-item" onclick="showSection('reports')">
+      <span class="nav-icon">📄</span> Reports
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="admin-profile-mini">
+      <div class="admin-avatar" id="sidebarAvatar">A</div>
+      <div class="admin-info">
+        <div class="admin-name" id="sidebarName">Admin</div>
+        <div class="admin-role">Super Admin</div>
+      </div>
+      <span style="color:rgba(255,255,255,0.4);font-size:16px;cursor:pointer;" onclick="logout()">⏻</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ── TOPBAR ──────────────────────────────────────────────── -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div>
+      <div class="page-title" id="pageTitle">Dashboard</div>
+      <div class="page-subtitle" id="pageSubtitle">Welcome back, Admin</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" placeholder="Search students, companies..." id="globalSearch" />
+    </div>
+    <div class="topbar-btn" onclick="showSection('notifications')">
+      🔔 <span class="badge">3</span>
+    </div>
+    <div class="topbar-btn" onclick="logout()">⏻</div>
+  </div>
+</header>
+
+<!-- ── TOAST CONTAINER ────────────────────────────────────── -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ── MAIN CONTENT ───────────────────────────────────────── -->
+<main class="main">
+
+  <!-- ══ DASHBOARD ══ -->
+  <div class="section active" id="sec-dashboard">
+    <div class="welcome-banner">
+      <div class="welcome-text">
+        <h2>Good morning, <span id="adminNameBanner">Admin</span>! 👋</h2>
+        <p>Here's what's happening with your placement portal today.</p>
+      </div>
+      <div class="welcome-emoji">🎓</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#DBEAFE;">👥</div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-students" style="color:var(--primary)">-</div>
+          <div class="stat-label">Total Students</div>
+          <div class="stat-change up" id="stat-placed">- placed</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#D1FAE5;">🏢</div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-companies" style="color:var(--success)">-</div>
+          <div class="stat-label">Active Companies</div>
+          <div class="stat-change up" id="stat-pending-co">- pending</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FEF3C7;">💼</div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-drives" style="color:var(--warning)">-</div>
+          <div class="stat-label">Active Drives</div>
+          <div class="stat-change up" id="stat-total-drives">- total</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#EDE9FE;">📈</div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-placement-rate" style="color:var(--accent)">-%</div>
+          <div class="stat-label">Placement Rate</div>
+          <div class="stat-change up" id="stat-avg-pkg">Avg pkg: -</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📊 Branch-wise Placements</span>
+        </div>
+        <div class="card-body">
+          <div class="chart-container"><canvas id="branchChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📈 Monthly Placements</span>
+        </div>
+        <div class="card-body">
+          <div class="chart-container"><canvas id="monthlyChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🏢 Recent Companies</span>
+          <button class="btn btn-sm btn-outline" onclick="showSection('companies')">View All</button>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Company</th><th>Industry</th><th>Status</th></tr></thead>
+              <tbody id="recentCompaniesTable"><tr><td colspan="3"><div class="loading-overlay"><div class="spinner"></div></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">💼 Recent Drives</span>
+          <button class="btn btn-sm btn-outline" onclick="showSection('drives')">View All</button>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Drive</th><th>Company</th><th>Status</th></tr></thead>
+              <tbody id="recentDrivesTable"><tr><td colspan="3"><div class="loading-overlay"><div class="spinner"></div></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ COMPANIES ══ -->
+  <div class="section" id="sec-companies">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <div class="tabs" style="margin-bottom:0;">
+          <button class="tab active" onclick="filterCompanies('all',this)">All</button>
+          <button class="tab" onclick="filterCompanies('pending',this)">Pending</button>
+          <button class="tab" onclick="filterCompanies('approved',this)">Approved</button>
+          <button class="tab" onclick="filterCompanies('rejected',this)">Rejected</button>
+        </div>
+      </div>
+      <div class="filter-bar" style="margin-bottom:0;">
+        <input class="form-input" placeholder="Search companies..." id="companySearch" oninput="loadCompanies()" />
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Company</th><th>Industry</th><th>Email</th><th>Drives</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead>
+            <tbody id="companiesTable"><tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STUDENTS ══ -->
+  <div class="section" id="sec-students">
+    <div class="filter-bar">
+      <input class="form-input" placeholder="Search students..." id="studentSearch" oninput="loadStudents()" />
+      <select class="form-select" id="studentBranchFilter" onchange="loadStudents()">
+        <option value="">All Branches</option>
+        <option>CSE</option><option>IT</option><option>ECE</option>
+        <option>MCA</option><option>MBA</option><option>ME</option>
+      </select>
+      <select class="form-select" id="studentPlacedFilter" onchange="loadStudents()">
+        <option value="">All Status</option>
+        <option value="0">Unplaced</option>
+        <option value="1">Placed</option>
+      </select>
+      <button class="btn btn-primary" onclick="exportCSV('students')">⬇ Export CSV</button>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Student</th><th>Roll No</th><th>Branch</th><th>CGPA</th><th>Resume</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="studentsTable"><tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ JOB DRIVES ══ -->
+  <div class="section" id="sec-drives">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="tabs" style="margin-bottom:0;">
+        <button class="tab active" onclick="filterDrives('all',this)">All</button>
+        <button class="tab" onclick="filterDrives('upcoming',this)">Upcoming</button>
+        <button class="tab" onclick="filterDrives('active',this)">Active</button>
+        <button class="tab" onclick="filterDrives('closed',this)">Closed</button>
+      </div>
+      <button class="btn btn-primary" onclick="openDriveModal()">+ Create Drive</button>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Drive Title</th><th>Company</th><th>Type</th><th>Package</th><th>Deadline</th><th>Applicants</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="drivesTable"><tr><td colspan="8"><div class="loading-overlay"><div class="spinner"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ APPLICATIONS ══ -->
+  <div class="section" id="sec-applications">
+    <div class="filter-bar">
+      <select class="form-select" id="appDriveFilter" onchange="loadApplications()">
+        <option value="">All Drives</option>
+      </select>
+      <select class="form-select" id="appStatusFilter" onchange="loadApplications()">
+        <option value="">All Status</option>
+        <option value="applied">Applied</option>
+        <option value="shortlisted">Shortlisted</option>
+        <option value="interview">Interview</option>
+        <option value="selected">Selected</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      <button class="btn btn-primary" onclick="bulkShortlist()">⚡ Bulk Shortlist</button>
+      <button class="btn btn-outline" onclick="exportCSV('applications')">⬇ Export CSV</button>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll()" /></th>
+              <th>Student</th><th>Drive</th><th>Company</th><th>CGPA</th><th>Applied</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="applicationsTable"><tr><td colspan="8"><div class="loading-overlay"><div class="spinner"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ NOTIFICATIONS ══ -->
+  <div class="section" id="sec-notifications">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><span class="card-title">📢 Send Announcement</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input class="form-input" id="notifTitle" placeholder="Notification title..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-textarea" id="notifMessage" placeholder="Write your announcement..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Send To</label>
+              <select class="form-select" id="notifTarget">
+                <option value="all">All Students</option>
+                <option value="student">Students Only</option>
+                <option value="company">Companies Only</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Branch (optional)</label>
+              <select class="form-select" id="notifBranch">
+                <option value="">All Branches</option>
+                <option>CSE</option><option>IT</option><option>ECE</option>
+                <option>MCA</option><option>MBA</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="sendNotification()" style="width:100%;">🔔 Send Notification</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📜 Notification History</span></div>
+        <div class="card-body" style="padding:0;">
+          <div id="notifHistory" style="max-height:400px;overflow-y:auto;">
+            <div class="loading-overlay"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ INTERVIEWS ══ -->
+  <div class="section" id="sec-interviews">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📅 Interview Schedule</span>
+        <button class="btn btn-primary btn-sm" onclick="openInterviewModal()">+ Schedule Interview</button>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Student</th><th>Company</th><th>Drive</th><th>Round</th><th>Date & Time</th><th>Mode</th><th>Status</th></tr></thead>
+            <tbody id="interviewsTable">
+              <tr><td colspan="7">
+                <div class="empty-state">
+                  <div class="empty-icon">📅</div>
+                  <p>No interviews scheduled yet.</p>
+                </div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ QUERIES ══ -->
+  <div class="section" id="sec-queries">
+    <div class="filter-bar">
+      <select class="form-select" id="queryStatusFilter" onchange="loadQueries()">
+        <option value="">All Queries</option>
+        <option value="open">Open</option>
+        <option value="resolved">Resolved</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0;">
+        <div id="queriesList"><div class="loading-overlay"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ANALYTICS ══ -->
+  <div class="section" id="sec-analytics">
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#DBEAFE;">🎯</div>
+        <div class="stat-info">
+          <div class="stat-value" id="ana-rate" style="color:var(--primary)">-%</div>
+          <div class="stat-label">Placement Rate</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#D1FAE5;">💰</div>
+        <div class="stat-info">
+          <div class="stat-value" id="ana-avg" style="color:var(--success)">-</div>
+          <div class="stat-label">Avg Package (LPA)</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FEF3C7;">🏆</div>
+        <div class="stat-info">
+          <div class="stat-value" id="ana-max" style="color:var(--warning)">-</div>
+          <div class="stat-label">Highest Package</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#EDE9FE;">📋</div>
+        <div class="stat-info">
+          <div class="stat-value" id="ana-apps" style="color:var(--accent)">-</div>
+          <div class="stat-label">Total Applications</div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">🏢 Company-wise Placements</span></div>
+        <div class="card-body"><div class="chart-container"><canvas id="companyChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">🎓 Branch-wise Stats</span></div>
+        <div class="card-body"><div class="chart-container"><canvas id="branchPieChart"></canvas></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🏆 Top Packages</span>
+        <button class="btn btn-sm btn-outline" onclick="exportCSV('placements')">⬇ Download Report</button>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Student</th><th>Branch</th><th>Company</th><th>Package (LPA)</th></tr></thead>
+            <tbody id="topPackagesTable"><tr><td colspan="4"><div class="loading-overlay"><div class="spinner"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ REPORTS ══ -->
+  <div class="section" id="sec-reports">
+    <div class="grid-3">
+      <div class="card" style="text-align:center;">
+        <div class="card-body">
+          <div style="font-size:48px;margin-bottom:12px;">👥</div>
+          <div class="card-title" style="margin-bottom:8px;">Students Report</div>
+          <p style="font-size:13px;color:var(--light);margin-bottom:16px;">All registered students with placement status</p>
+          <button class="btn btn-primary" style="width:100%;" onclick="exportCSV('students')">⬇ Download CSV</button>
+        </div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="card-body">
+          <div style="font-size:48px;margin-bottom:12px;">📋</div>
+          <div class="card-title" style="margin-bottom:8px;">Applications Report</div>
+          <p style="font-size:13px;color:var(--light);margin-bottom:16px;">All applications with current status</p>
+          <button class="btn btn-primary" style="width:100%;" onclick="exportCSV('applications')">⬇ Download CSV</button>
+        </div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="card-body">
+          <div style="font-size:48px;margin-bottom:12px;">🎯</div>
+          <div class="card-title" style="margin-bottom:8px;">Placement Report</div>
+          <p style="font-size:13px;color:var(--light);margin-bottom:16px;">Placed students with package details</p>
+          <button class="btn btn-primary" style="width:100%;" onclick="exportCSV('placements')">⬇ Download CSV</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══ MODALS ══ -->
+
+<!-- Drive Modal -->
+<div class="modal-overlay" id="driveModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="driveModalTitle">Create Job Drive</span>
+      <button class="modal-close" onclick="closeModal('driveModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Company *</label>
+          <select class="form-select" id="driveCompanyId"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Drive Title *</label>
+          <input class="form-input" id="driveTitle" placeholder="e.g. Software Engineer 2025" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="driveDesc" placeholder="Job description..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Job Type</label>
+          <select class="form-select" id="driveJobType">
+            <option value="full_time">Full Time</option>
+            <option value="internship">Internship</option>
+            <option value="contract">Contract</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          <input class="form-input" id="driveLocation" placeholder="e.g. Indore, Remote" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Package Min (LPA)</label>
+          <input class="form-input" type="number" id="drivePkgMin" placeholder="e.g. 6" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Package Max (LPA)</label>
+          <input class="form-input" type="number" id="drivePkgMax" placeholder="e.g. 12" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Min CGPA</label>
+          <input class="form-input" type="number" id="driveMinCgpa" placeholder="e.g. 7.0" step="0.1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Application Deadline</label>
+          <input class="form-input" type="date" id="driveDeadline" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Drive Date</label>
+          <input class="form-input" type="date" id="driveDriveDate" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="driveStatus">
+            <option value="upcoming">Upcoming</option>
+            <option value="active">Active</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Eligible Branches (comma separated)</label>
+        <input class="form-input" id="driveEligBranches" placeholder="e.g. CSE, IT, MCA" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('driveModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDrive()">Save Drive</button>
+    </div>
+  </div>
+</div>
+
+<!-- Company Detail Modal -->
+<div class="modal-overlay" id="companyDetailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Company Details</span>
+      <button class="modal-close" onclick="closeModal('companyDetailModal')">✕</button>
+    </div>
+    <div class="modal-body" id="companyDetailBody">
+      <div class="loading-overlay"><div class="spinner"></div></div>
+    </div>
+    <div class="modal-footer" id="companyDetailFooter"></div>
+  </div>
+</div>
+
+<!-- Query Reply Modal -->
+<div class="modal-overlay" id="queryModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Reply to Query</span>
+      <button class="modal-close" onclick="closeModal('queryModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="queryDetail" style="margin-bottom:16px;padding:14px;background:var(--bg);border-radius:10px;font-size:13px;"></div>
+      <div class="form-group">
+        <label class="form-label">Your Reply</label>
+        <textarea class="form-textarea" id="queryReply" placeholder="Type your reply..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('queryModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitQueryReply()">Send Reply ✓</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let token = localStorage.getItem('placemat_token');
+let user  = JSON.parse(localStorage.getItem('placemat_user') || '{}');
+let currentCompanyFilter = 'all';
+let currentDriveFilter   = 'all';
+let selectedQueryId      = null;
+let editingDriveId       = null;
+
+// ── INIT ────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if (!token || !user || user.role !== 'admin' && user.role !== 'superadmin') {
+    window.location.href = 'login.html'; return;
+  }
+  document.getElementById('adminNameBanner').textContent = user.name || 'Admin';
+  document.getElementById('sidebarName').textContent     = user.name || 'Admin';
+  document.getElementById('sidebarAvatar').textContent   = (user.name || 'A')[0].toUpperCase();
+  loadDashboard();
+});
+
+// ── AUTH HEADER ─────────────────────────────────────────────
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+}
+
+// ── LOGOUT ──────────────────────────────────────────────────
+function logout() {
+  localStorage.removeItem('placemat_token');
+  localStorage.removeItem('placemat_user');
+  window.location.href = 'login.html';
+}
+
+// ── SECTION NAVIGATION ──────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + name)?.classList.add('active');
+
+  const titles = {
+    dashboard: ['Dashboard','Overview & Stats'],
+    companies: ['Companies','Manage company registrations'],
+    students:  ['Students','View & manage students'],
+    drives:    ['Job Drives','Manage placement drives'],
+    applications:['Applications','Monitor all applications'],
+    notifications:['Notifications','Send announcements'],
+    interviews:['Interviews','Schedule & manage interviews'],
+    queries:   ['Queries','Student & company queries'],
+    analytics: ['Analytics','Placement insights'],
+    reports:   ['Reports','Download reports']
+  };
+  const [title, sub] = titles[name] || [name, ''];
+  document.getElementById('pageTitle').textContent    = title;
+  document.getElementById('pageSubtitle').textContent = sub;
+
+  // Lazy load sections
+  if (name === 'companies')     loadCompanies();
+  if (name === 'students')      loadStudents();
+  if (name === 'drives')        loadDrives();
+  if (name === 'applications')  loadApplications();
+  if (name === 'notifications') loadNotifHistory();
+  if (name === 'queries')       loadQueries();
+  if (name === 'analytics')     loadAnalytics();
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ── MODAL ────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── DASHBOARD ────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const r = await fetch(`${API}/admin/dashboard`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.success) { if(r.status===401) logout(); return; }
+    const o = d.data.overview;
+
+    document.getElementById('stat-students').textContent      = o.totalStudents;
+    document.getElementById('stat-placed').textContent        = `${o.placedStudents} placed (${o.placementRate}%)`;
+    document.getElementById('stat-companies').textContent     = o.totalCompanies;
+    document.getElementById('stat-pending-co').textContent    = `${o.pendingCompanies} pending`;
+    document.getElementById('stat-drives').textContent        = o.activeDrives;
+    document.getElementById('stat-total-drives').textContent  = `${o.totalDrives} total`;
+    document.getElementById('stat-placement-rate').textContent= `${o.placementRate}%`;
+    document.getElementById('stat-avg-pkg').textContent       = `Avg pkg: ${o.avgPackage} LPA`;
+
+    if (o.pendingCompanies > 0) document.getElementById('pendingBadge').textContent = o.pendingCompanies;
+
+    renderRecentCompanies(d.data.recentCompanies);
+    renderRecentDrives(d.data.recentDrives);
+    renderBranchChart(d.data.branchStats);
+    renderMonthlyChart([]);
+  } catch(e) { console.error(e); }
+}
+
+function renderRecentCompanies(data) {
+  const tb = document.getElementById('recentCompaniesTable');
+  if (!data?.length) { tb.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--light);padding:20px;">No companies yet</td></tr>'; return; }
+  tb.innerHTML = data.map(c => `
+    <tr>
+      <td><div style="font-weight:600;">${c.name}</div></td>
+      <td>${c.industry || '-'}</td>
+      <td>${statusBadge(c.approval_status)}</td>
+    </tr>`).join('');
+}
+
+function renderRecentDrives(data) {
+  const tb = document.getElementById('recentDrivesTable');
+  if (!data?.length) { tb.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--light);padding:20px;">No drives yet</td></tr>'; return; }
+  tb.innerHTML = data.map(d => `
+    <tr>
+      <td><div style="font-weight:600;">${d.title}</div></td>
+      <td>${d.company_name}</td>
+      <td>${statusBadge(d.status)}</td>
+    </tr>`).join('');
+}
+
+// ── CHARTS ───────────────────────────────────────────────────
+function renderBranchChart(data) {
+  const ctx = document.getElementById('branchChart')?.getContext('2d');
+  if (!ctx || !data?.length) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(b => b.branch),
+      datasets: [
+        { label: 'Total', data: data.map(b => b.total), backgroundColor: '#DBEAFE', borderColor: '#3B82F6', borderWidth: 2, borderRadius: 8 },
+        { label: 'Placed', data: data.map(b => b.placed || 0), backgroundColor: '#D1FAE5', borderColor: '#10B981', borderWidth: 2, borderRadius: 8 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, grid: { color: '#F1F5F9' } }, x: { grid: { display: false } } } }
+  });
+}
+
+function renderMonthlyChart(data) {
+  const ctx = document.getElementById('monthlyChart')?.getContext('2d');
+  if (!ctx) return;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{ label: 'Placements', data: [0,0,0,2,5,8,12,15,10,18,22,20], backgroundColor: 'rgba(59,130,246,0.08)', borderColor: '#3B82F6', borderWidth: 2.5, fill: true, tension: 0.4, pointBackgroundColor: '#3B82F6', pointRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, grid: { color: '#F1F5F9' } }, x: { grid: { display: false } } } }
+  });
+}
+
+// ── COMPANIES ────────────────────────────────────────────────
+async function loadCompanies() {
+  const search = document.getElementById('companySearch')?.value || '';
+  const status = currentCompanyFilter === 'all' ? '' : currentCompanyFilter;
+  const tb = document.getElementById('companiesTable');
+  tb.innerHTML = '<tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div></div></td></tr>';
+  try {
+    const r = await fetch(`${API}/admin/companies?status=${status}&search=${search}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.success) return;
+    const companies = d.data.companies;
+    if (!companies.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🏢</div><p>No companies found</p></div></td></tr>'; return; }
+    tb.innerHTML = companies.map(c => `
+      <tr>
+        <td><div style="font-weight:600;">${c.name}</div><div style="font-size:11px;color:var(--light);">${c.email}</div></td>
+        <td>${c.industry || '-'}</td>
+        <td>${c.email}</td>
+        <td>${c.total_drives || 0}</td>
+        <td>${statusBadge(c.approval_status)}</td>
+        <td>${fmtDate(c.created_at)}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-icon" onclick="viewCompany(${c.id})" title="View">👁</button>
+            ${c.approval_status==='pending'?`<button class="btn btn-sm btn-success" onclick="approveCompany(${c.id})">✓ Approve</button><button class="btn btn-sm btn-danger" onclick="rejectCompany(${c.id})">✕ Reject</button>`:''}
+            <button class="btn-icon" onclick="toggleCompanyActive(${c.id},${c.is_active})" title="${c.is_active?'Deactivate':'Activate'}">${c.is_active?'🔒':'🔓'}</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+function filterCompanies(status, el) {
+  currentCompanyFilter = status;
+  document.querySelectorAll('#sec-companies .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  loadCompanies();
+}
+
+async function viewCompany(id) {
+  openModal('companyDetailModal');
+  document.getElementById('companyDetailBody').innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
+  try {
+    const r = await fetch(`${API}/admin/companies/${id}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.success) return;
+    const c = d.data.company;
+    document.getElementById('companyDetailBody').innerHTML = `
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:20px;">
+        <div style="width:60px;height:60px;border-radius:14px;background:linear-gradient(135deg,#1E40AF,#3B82F6);display:flex;align-items:center;justify-content:center;font-size:24px;color:white;">${c.name[0]}</div>
+        <div><div style="font-size:18px;font-weight:700;">${c.name}</div><div style="color:var(--light);font-size:13px;">${c.industry||'Industry not specified'}</div></div>
+        <div style="margin-left:auto;">${statusBadge(c.approval_status)}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+        <div><strong>Email:</strong> ${c.email}</div>
+        <div><strong>Phone:</strong> ${c.phone||'-'}</div>
+        <div><strong>HR Contact:</strong> ${c.hr_name||'-'}</div>
+        <div><strong>Website:</strong> ${c.website?`<a href="${c.website}" target="_blank">${c.website}</a>`:'-'}</div>
+        <div><strong>Registered:</strong> ${fmtDate(c.created_at)}</div>
+        <div><strong>Last Login:</strong> ${c.last_login?fmtDate(c.last_login):'-'}</div>
+      </div>
+      ${c.description?`<div style="margin-top:14px;padding:12px;background:var(--bg);border-radius:10px;font-size:13px;">${c.description}</div>`:''}
+      <div style="margin-top:16px;font-weight:600;font-size:14px;">Job Drives (${d.data.drives.length})</div>
+      ${d.data.drives.map(dr=>`<div style="padding:10px;background:var(--bg);border-radius:8px;margin-top:8px;font-size:13px;display:flex;justify-content:space-between;"><span>${dr.title}</span>${statusBadge(dr.status)}</div>`).join('')}
+    `;
+    document.getElementById('companyDetailFooter').innerHTML = `
+      ${c.approval_status==='pending'?`<button class="btn btn-success" onclick="approveCompany(${c.id});closeModal('companyDetailModal')">✓ Approve</button><button class="btn btn-danger" onclick="rejectCompany(${c.id});closeModal('companyDetailModal')">✕ Reject</button>`:''}
+      <button class="btn btn-outline" onclick="closeModal('companyDetailModal')">Close</button>
+    `;
+  } catch(e) { console.error(e); }
+}
+
+async function approveCompany(id) {
+  try {
+    const r = await fetch(`${API}/admin/companies/${id}/status`, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ status:'approved' }) });
+    const d = await r.json();
+    if (d.success) { toast('Company approved!'); loadCompanies(); loadDashboard(); }
+    else toast(d.message, 'error');
+  } catch(e) { toast('Server error', 'error'); }
+}
+
+async function rejectCompany(id) {
+  const note = prompt('Reason for rejection (optional):');
+  try {
+    const r = await fetch(`${API}/admin/companies/${id}/status`, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ status:'rejected', rejection_note: note }) });
+    const d = await r.json();
+    if (d.success) { toast('Company rejected.'); loadCompanies(); }
+    else toast(d.message, 'error');
+  } catch(e) { toast('Server error', 'error'); }
+}
+
+async function toggleCompanyActive(id, currentState) {
+  try {
+    const r = await fetch(`${API}/admin/companies/${id}/toggle-active`, { method:'PATCH', headers: authHeaders() });
+    const d = await r.json();
+    if (d.success) { toast(d.message); loadCompanies(); }
+    else toast(d.message, 'error');
+  } catch(e) { toast('Server error', 'error'); }
+}
+
+// ── STUDENTS ─────────────────────────────────────────────────
+async function loadStudents() {
+  const search  = document.getElementById('studentSearch')?.value || '';
+  const branch  = document.getElementById('studentBranchFilter')?.value || '';
+  const placed  = document.getElementById('studentPlacedFilter')?.value;
+  const tb = document.getElementById('studentsTable');
+  tb.innerHTML = '<tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div></div></td></tr>';
+  try {
+    let url = `${API}/admin/students?search=${search}&branch=${branch}`;
+    if (placed !== '' && placed !== undefined) url += `&is_placed=${placed}`;
+    const r = await fetch(url, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.success) return;
+    const students = d.data.students;
+    if (!students.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👥</div><p>No students found</p></div></td></tr>'; return; }
+    tb.innerHTML = students.map(s => `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="avatar">${s.name[0]}</div>
+            <div><div style="font-weight:600;">${s.name}</div><div style="font-size:11px;color:var(--light);">${s.email}</div></div>
+          </div>
+        </td>
+        <td>${s.roll_number}</td>
+        <td>${s.branch}</td>
+        <td><strong>${s.cgpa}</strong></td>
+        <td>${s.resume_path?'<span style="color:var(--success);">✅ Uploaded</span>':'<span style="color:var(--light);">—</span>'}</td>
+        <td>${s.is_placed?'<span class="badge badge-success">✓ Placed</span>':s.is_blocked?'<span class="badge badge-danger">Blocked</span>':'<span class="badge badge-gray">Active</span>'}</td>
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${!s.is_placed?`<button class="btn btn-sm btn-success" onclick="markPlaced(${s.id},'${s.name}')">🎯 Place</button>`:''}
+            <button class="btn-icon" onclick="toggleStudentBlock(${s.id},${s.is_blocked})" title="${s.is_blocked?'Unblock':'Block'}">${s.is_blocked?'🔓':'🔒'}</button>
+            <button class="btn-icon" onclick="verifyStudent(${s.id})" title="Verify">✅</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function toggleStudentBlock(id, blocked) {
+  try {
+    const r = await fetch(`${API}/admin/students/${id}/toggle-block`, { method:'PATCH', headers: authHeaders() });
+    const d = await r.json();
+    if (d.success) { toast(d.message); loadStudents(); }
+    else toast(d.message, 'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+async function verifyStudent(id) {
+  try {
+    const r = await fetch(`${API}/admin/students/${id}/verify`, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ profile_verified:1, resume_verified:1 }) });
+    const d = await r.json();
+    if (d.success) { toast('Student profile verified!'); loadStudents(); }
+  } catch(e) { toast('Server error','error'); }
+}
+
+async function markPlaced(id, name) {
+  const companyId = prompt(`Enter Company ID for ${name}:`);
+  const pkg       = prompt('Enter package (LPA):');
+  if (!companyId || !pkg) return;
+  try {
+    const r = await fetch(`${API}/admin/students/${id}/mark-placed`, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ company_id: parseInt(companyId), package: parseFloat(pkg) }) });
+    const d = await r.json();
+    if (d.success) { toast(`${name} marked as placed! 🎉`); loadStudents(); loadDashboard(); }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+// ── DRIVES ───────────────────────────────────────────────────
+async function loadDrives() {
+  const status = currentDriveFilter === 'all' ? '' : currentDriveFilter;
+  const tb = document.getElementById('drivesTable');
+  tb.innerHTML = '<tr><td colspan="8"><div class="loading-overlay"><div class="spinner"></div></div></td></tr>';
+  try {
+    const r = await fetch(`${API}/admin/drives?status=${status}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.success) return;
+    const drives = d.data.drives;
+    if (!drives.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">💼</div><p>No drives found</p></div></td></tr>'; return; }
+    tb.innerHTML = drives.map(dr => `
+      <tr>
+        <td><div style="font-weight:600;">${dr.title}</div><div style="font-size:11px;color:var(--light);">${dr.job_type?.replace('_',' ')}</div></td>
+        <td>${dr.company_name}</td>
+        <td><span class="badge badge-info">${dr.job_type?.replace('_',' ')}</span></td>
+        <td>${dr.package_min&&dr.package_max?`${dr.package_min}–${dr.package_max} LPA`:dr.package_min?`${dr.package_min}+ LPA`:'—'}</td>
+        <td>${dr.application_deadline?fmtDate(dr.application_deadline):'—'}</td>
+        <td><strong>${dr.applicant_count||0}</strong></td>
+        <td>${statusBadge(dr.status)}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-icon" onclick="editDrive(${dr.id})" title="Edit">✏️</button>
+            <button class="btn-icon" onclick="changeDriveStatus(${dr.id},'${dr.status}')" title="Toggle Status">🔄</button>
+            <button class="btn-icon" onclick="viewApplicants(${dr.id},'${dr.title}')" title="Applicants">👥</button>
+            <button class="btn-icon" onclick="deleteDrive(${dr.id})" title="Delete" style="color:var(--danger);">🗑</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+function filterDrives(status, el) {
+  currentDriveFilter = status;
+  document.querySelectorAll('#sec-drives .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  loadDrives();
+}
+
+async function openDriveModal() {
+  editingDriveId = null;
+  document.getElementById('driveModalTitle').textContent = 'Create Job Drive';
+  document.getElementById('driveTitle').value = '';
+  document.getElementById('driveDesc').value  = '';
+  // Load companies for dropdown
+  const r = await fetch(`${API}/admin/companies?status=approved`, { headers: authHeaders() });
+  const d = await r.json();
+  const sel = document.getElementById('driveCompanyId');
+  sel.innerHTML = d.data?.companies?.map(c => `<option value="${c.id}">${c.name}</option>`).join('') || '<option>No approved companies</option>';
+  openModal('driveModal');
+}
+
+async function saveDrive() {
+  const payload = {
+    company_id:          parseInt(document.getElementById('driveCompanyId').value),
+    title:               document.getElementById('driveTitle').value,
+    description:         document.getElementById('driveDesc').value,
+    job_type:            document.getElementById('driveJobType').value,
+    location:            document.getElementById('driveLocation').value,
+    package_min:         parseFloat(document.getElementById('drivePkgMin').value)||null,
+    package_max:         parseFloat(document.getElementById('drivePkgMax').value)||null,
+    min_cgpa:            parseFloat(document.getElementById('driveMinCgpa').value)||0,
+    application_deadline:document.getElementById('driveDeadline').value||null,
+    drive_date:          document.getElementById('driveDriveDate').value||null,
+    status:              document.getElementById('driveStatus').value,
+    eligible_branches:   document.getElementById('driveEligBranches').value.split(',').map(s=>s.trim()).filter(Boolean)
+  };
+  if (!payload.title) { toast('Drive title is required.','error'); return; }
+  try {
+    const url    = editingDriveId ? `${API}/admin/drives/${editingDriveId}` : `${API}/admin/drives`;
+    const method = editingDriveId ? 'PUT' : 'POST';
+    const r = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(payload) });
+    const d = await r.json();
+    if (d.success) { toast(editingDriveId?'Drive updated!':'Drive created! 🎉'); closeModal('driveModal'); loadDrives(); }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+async function deleteDrive(id) {
+  if (!confirm('Delete this drive? This cannot be undone.')) return;
+  try {
+    const r = await fetch(`${API}/admin/drives/${id}`, { method:'DELETE', headers: authHeaders() });
+    const d = await r.json();
+    if (d.success) { toast('Drive deleted.'); loadDrives(); }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+async function changeDriveStatus(id, current) {
+  const next = { upcoming:'active', active:'closed', closed:'upcoming', cancelled:'upcoming' }[current] || 'active';
+  try {
+    const r = await fetch(`${API}/admin/drives/${id}/status`, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ status: next }) });
+    const d = await r.json();
+    if (d.success) { toast(`Drive set to ${next}`); loadDrives(); }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+// ── APPLICATIONS ─────────────────────────────────────────────
+async function loadApplications() {
+  const drive  = document.getElementById('appDriveFilter')?.value || '';
+  const status = document.getElementById('appStatusFilter')?.value || '';
+
+  // Populate drive filter if empty
+  if (!document.getElementById('appDriveFilter').options.length || document.getElementById('appDriveFilter').options[0].value === '') {
+    const r = await fetch(`${API}/admin/drives`, { headers: authHeaders() });
+    const d = await r.json();
+    const sel = document.getElementById('appDriveFilter');
+    sel.innerHTML = '<option value="">All Drives</option>' + (d.data?.drives||[]).map(dr=>`<option value="${dr.id}">${dr.title}</option>`).join('');
+  }
+
+  if (!drive) { document.getElementById('applicationsTable').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--light);">Select a drive to view applicants</td></tr>'; return; }
+
+  const tb = document.getElementById('applicationsTable');
+  tb.innerHTML = '<tr><td colspan="8"><div class="loading-overlay"><div class="spinner"></div></div></td></tr>';
+  try {
+    const r = await fetch(`${API}/admin/drives/${drive}/applicants?status=${status}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.success) return;
+    const apps = d.data.applicants;
+    if (!apps.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📋</div><p>No applicants found</p></div></td></tr>'; return; }
+    tb.innerHTML = apps.map(a => `
+      <tr>
+        <td><input type="checkbox" class="app-checkbox" value="${a.application_id}" /></td>
+        <td>
+          <div style="font-weight:600;">${a.name}</div>
+          <div style="font-size:11px;color:var(--light);">${a.roll_number} • ${a.branch}</div>
+        </td>
+        <td>—</td>
+        <td>—</td>
+        <td><strong>${a.cgpa}</strong></td>
+        <td>${fmtDate(a.applied_at)}</td>
+        <td>${appStatusBadge(a.status)}</td>
+        <td>
+          <select class="form-select" style="width:130px;padding:5px 8px;" onchange="updateAppStatus(${a.application_id},this.value)">
+            <option value="">Change...</option>
+            <option value="shortlisted">Shortlist</option>
+            <option value="interview">Interview</option>
+            <option value="selected">Select</option>
+            <option value="rejected">Reject</option>
+          </select>
+        </td>
+      </tr>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function updateAppStatus(id, status) {
+  if (!status) return;
+  try {
+    const r = await fetch(`${API}/admin/applications/${id}/status`, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ status }) });
+    const d = await r.json();
+    if (d.success) { toast(`Application ${status}!`); loadApplications(); }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+function toggleSelectAll() {
+  const all = document.getElementById('selectAll').checked;
+  document.querySelectorAll('.app-checkbox').forEach(cb => cb.checked = all);
+}
+
+async function bulkShortlist() {
+  const ids = [...document.querySelectorAll('.app-checkbox:checked')].map(cb => parseInt(cb.value));
+  if (!ids.length) { toast('Select at least one application.','error'); return; }
+  try {
+    const r = await fetch(`${API}/admin/applications/bulk`, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ application_ids: ids, status:'shortlisted' }) });
+    const d = await r.json();
+    if (d.success) { toast(d.message); loadApplications(); }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+// ── NOTIFICATIONS ────────────────────────────────────────────
+async function sendNotification() {
+  const title   = document.getElementById('notifTitle').value;
+  const message = document.getElementById('notifMessage').value;
+  const target  = document.getElementById('notifTarget').value;
+  const branch  = document.getElementById('notifBranch').value;
+  if (!title || !message) { toast('Title and message are required.','error'); return; }
+  try {
+    const r = await fetch(`${API}/admin/notifications`, { method:'POST', headers: authHeaders(), body: JSON.stringify({ title, message, target_role: target, target_branch: branch||null, type:'general' }) });
+    const d = await r.json();
+    if (d.success) { toast('Notification sent! 🔔'); document.getElementById('notifTitle').value=''; document.getElementById('notifMessage').value=''; loadNotifHistory(); }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+async function loadNotifHistory() {
+  const container = document.getElementById('notifHistory');
+  try {
+    const r = await fetch(`${API}/admin/notifications`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.success) return;
+    const notifs = d.data.notifications;
+    if (!notifs.length) { container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><p>No notifications sent yet</p></div>'; return; }
+    container.innerHTML = notifs.map(n => `
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <strong style="font-size:13px;">${n.title}</strong>
+          <span style="font-size:11px;color:var(--light);">${fmtDate(n.created_at)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--mid);">${n.message}</div>
+        <div style="margin-top:6px;"><span class="badge badge-info">${n.target_role}</span>${n.target_branch?`<span class="badge badge-purple" style="margin-left:4px;">${n.target_branch}</span>`:''}</div>
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ── QUERIES ──────────────────────────────────────────────────
+async function loadQueries() {
+  const status = document.getElementById('queryStatusFilter')?.value || '';
+  const container = document.getElementById('queriesList');
+  try {
+    const r = await fetch(`${API}/admin/queries?status=${status}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.success) return;
+    const queries = d.data.queries;
+    if (!queries.length) { container.innerHTML = '<div class="empty-state"><div class="empty-icon">💬</div><p>No queries found</p></div>'; return; }
+    container.innerHTML = queries.map(q => `
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <strong style="font-size:14px;">${q.subject}</strong>
+              ${q.status==='open'?'<span class="badge badge-warning">Open</span>':'<span class="badge badge-success">Resolved</span>'}
+              <span class="badge badge-info">${q.sender_role}</span>
+            </div>
+            <div style="font-size:13px;color:var(--mid);margin-bottom:6px;">${q.message}</div>
+            ${q.reply?`<div style="font-size:12px;background:#D1FAE5;padding:8px 12px;border-radius:8px;color:#065F46;"><strong>Reply:</strong> ${q.reply}</div>`:''}
+          </div>
+          ${q.status==='open'?`<button class="btn btn-sm btn-primary" onclick="openQueryReply(${q.id},'${q.subject.replace(/'/g,"\\'")}','${q.message.replace(/'/g,"\\'")}')" >Reply</button>`:''}
+        </div>
+        <div style="font-size:11px;color:var(--light);margin-top:8px;">${fmtDate(q.created_at)}</div>
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+function openQueryReply(id, subject, message) {
+  selectedQueryId = id;
+  document.getElementById('queryDetail').innerHTML = `<strong>${subject}</strong><br><span style="color:var(--mid);">${message}</span>`;
+  document.getElementById('queryReply').value = '';
+  openModal('queryModal');
+}
+
+async function submitQueryReply() {
+  const reply = document.getElementById('queryReply').value;
+  if (!reply) { toast('Reply cannot be empty.','error'); return; }
+  try {
+    const r = await fetch(`${API}/admin/queries/${selectedQueryId}/reply`, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({ reply }) });
+    const d = await r.json();
+    if (d.success) { toast('Reply sent!'); closeModal('queryModal'); loadQueries(); }
+    else toast(d.message,'error');
+  } catch(e) { toast('Server error','error'); }
+}
+
+// ── ANALYTICS ────────────────────────────────────────────────
+async function loadAnalytics() {
+  try {
+    const [statsR, analyticsR] = await Promise.all([
+      fetch(`${API}/admin/dashboard`, { headers: authHeaders() }),
+      fetch(`${API}/admin/analytics`, { headers: authHeaders() })
+    ]);
+    const stats     = await statsR.json();
+    const analytics = await analyticsR.json();
+
+    if (stats.success) {
+      const o = stats.data.overview;
+      document.getElementById('ana-rate').textContent = `${o.placementRate}%`;
+      document.getElementById('ana-avg').textContent  = `${o.avgPackage} LPA`;
+      document.getElementById('ana-max').textContent  = `${o.highestPackage} LPA`;
+      document.getElementById('ana-apps').textContent = o.totalApplications;
+    }
+
+    if (analytics.success) {
+      renderCompanyChart(analytics.data.companyWise);
+      renderBranchPieChart(analytics.data.branchWise);
+      renderTopPackages(analytics.data.topPackages);
+    }
+  } catch(e) { console.error(e); }
+}
+
+function renderCompanyChart(data) {
+  const ctx = document.getElementById('companyChart')?.getContext('2d');
+  if (!ctx || !data?.length) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.slice(0,8).map(c => c.company_name),
+      datasets: [{ label: 'Offers', data: data.slice(0,8).map(c => c.offers_given), backgroundColor: '#3B82F6', borderRadius: 8 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#F1F5F9' } }, x: { grid: { display: false }, ticks: { maxRotation: 30 } } } }
+  });
+}
+
+function renderBranchPieChart(data) {
+  const ctx = document.getElementById('branchPieChart')?.getContext('2d');
+  if (!ctx || !data?.length) return;
+  const colors = ['#3B82F6','#10B981','#F59E0B','#EF4444','#6C5FBC','#EC4899','#14B8A6'];
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.map(b => b.branch),
+      datasets: [{ data: data.map(b => b.placed_students||0), backgroundColor: colors.slice(0,data.length), borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, cutout: '65%' }
+  });
+}
+
+function renderTopPackages(data) {
+  const tb = document.getElementById('topPackagesTable');
+  if (!data?.length) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--light);padding:20px;">No placement data yet</td></tr>'; return; }
+  tb.innerHTML = data.map((p,i) => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-size:18px;">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'🏅'}</div>
+          <div><div style="font-weight:600;">${p.name}</div><div style="font-size:11px;color:var(--light);">${p.roll_number}</div></div>
+        </div>
+      </td>
+      <td>${p.branch}</td>
+      <td>${p.company_name}</td>
+      <td><strong style="color:var(--success);font-size:15px;">${p.package} LPA</strong></td>
+    </tr>`).join('');
+}
+
+// ── EXPORTS ──────────────────────────────────────────────────
+function exportCSV(type) {
+  window.open(`${API}/admin/export/${type}?token=${token}`, '_blank');
+  // Attach token via fetch for proper auth
+  fetch(`${API}/admin/export/${type}`, { headers: authHeaders() })
+    .then(r => r.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href = url; a.download = `${type}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    });
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function statusBadge(status) {
+  const map = { approved:'badge-success', pending:'badge-warning', rejected:'badge-danger', active:'badge-success', upcoming:'badge-info', closed:'badge-gray', cancelled:'badge-danger' };
+  return `<span class="badge ${map[status]||'badge-gray'}">${status}</span>`;
+}
+
+function appStatusBadge(status) {
+  const map = { applied:'badge-info', shortlisted:'badge-purple', interview:'badge-warning', selected:'badge-success', rejected:'badge-danger', withdrawn:'badge-gray' };
+  return `<span class="badge ${map[status]||'badge-gray'}">${status}</span>`;
+}
+
+function openInterviewModal() { toast('Interview scheduling coming soon!','error'); }
+</script>
+</body>
+</html>

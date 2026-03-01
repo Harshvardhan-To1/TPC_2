@@ -1,0 +1,8 @@
+node_modules/
+.env
+database/placemat.db
+uploads/resumes/
+uploads/logos/
+uploads/offers/
+*.log
+.DS_Store
