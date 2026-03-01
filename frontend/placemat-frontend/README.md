@@ -115,7 +115,7 @@ After login → respective dashboard.html
 
 ## 🎨 Design Notes
 
-- **Font**: Poppins (Google Fonts)
+- **Font**: Inter + Manrope (Google Fonts)
 - **Primary Color**: `#6C5FBC` (purple)
 - **Background**: `#7165C0` gradient (matching purple page bg from screenshots)
 - **Cards**: White `#ffffff` with `border-radius: 22px`

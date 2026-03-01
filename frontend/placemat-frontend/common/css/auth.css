@@ -3,7 +3,7 @@
    Shared styles for login & register pages (all roles)
 ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap');
 
 *, *::before, *::after {
   margin: 0;
@@ -12,7 +12,8 @@
 }
 
 :root {
-  --font:          'Poppins', sans-serif;
+  --font:          'Inter', 'Segoe UI', sans-serif;
+  --font-heading:  'Manrope', 'Inter', 'Segoe UI', sans-serif;
   --purple:        #6C5FBC;
   --purple-dark:   #5549A8;
   --purple-light:  #8B7DD8;
@@ -80,6 +81,7 @@ body {
   font-weight: 800;
   color: var(--text-dark);
   letter-spacing: 0.5px;
+  font-family: var(--font-heading);
 }
 
 .auth-back-link {
@@ -145,6 +147,7 @@ body {
   font-weight: 800;
   margin-bottom: 12px;
   line-height: 1.3;
+  font-family: var(--font-heading);
 }
 
 .side-panel-desc {
@@ -200,6 +203,7 @@ body {
   font-weight: 800;
   color: var(--text-dark);
   margin-bottom: 6px;
+  font-family: var(--font-heading);
 }
 
 .auth-subtitle {

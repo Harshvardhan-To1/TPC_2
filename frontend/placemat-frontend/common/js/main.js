@@ -111,6 +111,47 @@ function initScrollReveal() {
 
 initScrollReveal();
 
+/* ─── SHARED AUTH ROUTING HELPERS ─────────────────────── */
+function readStoredAuth() {
+  try {
+    const token = localStorage.getItem('placemat_token');
+    const rawUser = localStorage.getItem('placemat_user');
+    const user = rawUser ? JSON.parse(rawUser) : null;
+
+    if (!token || !user || typeof user !== 'object') return null;
+    return { token, user };
+  } catch {
+    return null;
+  }
+}
+
+function goToDashboardSection(role, section = 'dashboard') {
+  const routes = {
+    student: 'student/dashboard.html',
+    admin: 'admin/dashboard.html',
+    superadmin: 'admin/dashboard.html',
+    company: 'company/dashboard.html'
+  };
+
+  const baseRoute = routes[role];
+  if (!baseRoute) return false;
+
+  const target = section && section !== 'dashboard'
+    ? `${baseRoute}?section=${encodeURIComponent(section)}`
+    : baseRoute;
+
+  window.location.href = target;
+  return true;
+}
+
+function openNotificationsEntry() {
+  const auth = readStoredAuth();
+  if (auth?.user?.role && goToDashboardSection(auth.user.role, 'notifications')) return;
+
+  openRoleModal('signin');
+  showRoleNotice('Sign in to view your role-specific notifications.');
+}
+
 
 /* ─── NAVBAR SHADOW ON SCROLL ──────────────────────────── */
 window.addEventListener('scroll', () => {
@@ -125,6 +166,34 @@ window.addEventListener('scroll', () => {
 /* ─── ROLE MODAL ────────────────────────────────────────── */
 let currentAction = 'signin'; // 'signin' | 'signup'
 
+const roleDescriptions = {
+  signin: {
+    student: 'Browse drives, apply to jobs, track your placement journey',
+    admin: 'Manage companies, students, drives and placement analytics',
+    company: 'Post drives, shortlist candidates and manage hiring'
+  },
+  signup: {
+    student: 'Create your student profile and start applying to drives',
+    admin: 'Invite only access. Admin accounts are created by placement cell',
+    company: 'Register your company and start campus recruitment'
+  }
+};
+
+function showRoleNotice(message, type = 'info') {
+  const notice = document.getElementById('modalNotice');
+  if (!notice) return;
+
+  notice.textContent = message;
+  notice.className = `modal-note show ${type}`;
+}
+
+function clearRoleNotice() {
+  const notice = document.getElementById('modalNotice');
+  if (!notice) return;
+  notice.className = 'modal-note';
+  notice.textContent = '';
+}
+
 /**
  * Open the role selection modal
  * @param {string} action - 'signin' or 'signup'
@@ -134,10 +203,20 @@ function openRoleModal(action = 'signin') {
   const modal    = document.getElementById('roleModal');
   const title    = document.getElementById('modalTitle');
   const subtitle = document.getElementById('modalSubtitle');
+  const studentRoleDesc = document.getElementById('studentRoleDesc');
+  const adminRoleDesc = document.getElementById('adminRoleDesc');
+  const companyRoleDesc = document.getElementById('companyRoleDesc');
+
+  clearRoleNotice();
+
+  const descriptions = roleDescriptions[action] || roleDescriptions.signin;
+  if (studentRoleDesc) studentRoleDesc.textContent = descriptions.student;
+  if (adminRoleDesc) adminRoleDesc.textContent = descriptions.admin;
+  if (companyRoleDesc) companyRoleDesc.textContent = descriptions.company;
 
   if (action === 'signup') {
     title.textContent    = 'Create Your Account';
-    subtitle.textContent = 'Register as a student, admin, or company';
+    subtitle.textContent = 'Register as a student or company';
   } else {
     title.textContent    = 'Welcome Back!';
     subtitle.textContent = 'Select your role to continue';
@@ -151,6 +230,7 @@ function closeRoleModal() {
   const modal = document.getElementById('roleModal');
   modal.classList.remove('active');
   document.body.style.overflow = '';
+  clearRoleNotice();
 }
 
 function closeRoleModalOutside(event) {
@@ -164,6 +244,17 @@ function closeRoleModalOutside(event) {
  * @param {string} role - 'student' | 'admin' | 'company'
  */
 function goToRole(role) {
+  const action = currentAction || 'signin';
+
+  if (action === 'signup' && role === 'admin') {
+    openRoleModal('signin');
+    showRoleNotice(
+      'Admin self-sign-up is disabled. Use Admin Sign In with authorized credentials.',
+      'warning'
+    );
+    return;
+  }
+
   const routes = {
     signin: {
       student: 'student/login.html',
@@ -177,7 +268,6 @@ function goToRole(role) {
     }
   };
 
-  const action = currentAction || 'signin';
   const page   = routes[action]?.[role];
 
   // Visual feedback before redirect

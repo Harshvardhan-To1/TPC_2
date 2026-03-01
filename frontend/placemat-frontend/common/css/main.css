@@ -1,10 +1,10 @@
 /* ============================================================
    PLACEMAT — Main Stylesheet
    Matches exact design from SCSIT DAVV Campus Placement screenshots
-   Font: Poppins | Theme: Purple + White cards on purple bg
+   Font: Inter + Manrope | Theme: Purple + White cards on purple bg
 ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap');
 
 /* ── RESET ─────────────────────────────────────────────── */
 *, *::before, *::after {
@@ -27,7 +27,8 @@
   --card-bg:        #ffffff;
   --card-radius:    22px;
   --card-shadow:    0 8px 40px rgba(108,95,188,0.10);
-  --font:           'Poppins', sans-serif;
+  --font:           'Inter', 'Segoe UI', sans-serif;
+  --font-heading:   'Manrope', 'Inter', 'Segoe UI', sans-serif;
 }
 
 html { scroll-behavior: smooth; }
@@ -37,6 +38,17 @@ body {
   background-color: var(--purple-page-bg);
   color: var(--text-dark);
   overflow-x: hidden;
+}
+
+.logo-text,
+.hero-banner-title,
+.hero-headline,
+.signflow-title,
+.section-title,
+.modal-title,
+.modal-logo-text {
+  font-family: var(--font-heading);
+  letter-spacing: -0.01em;
 }
 
 /* ── NAVBAR ─────────────────────────────────────────────── */
@@ -774,6 +786,29 @@ body {
 .modal-subtitle {
   font-size: 14px;
   color: var(--text-light);
+}
+
+.modal-note {
+  display: none;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.modal-note.show {
+  display: block;
+}
+
+.modal-note.warning {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
 }
 
 .role-cards {
